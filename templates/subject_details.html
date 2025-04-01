@@ -1,0 +1,1485 @@
+{% extends "base.html" %}
+
+{% block title %}{{ subject_name }} - Neko Study Quest{% endblock %}
+
+{% block page_title %}{{ subject_name }}{% endblock %}
+
+{% block subtitle %}Test Progress & Study Plan{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{{ url_for('index') }}">Home</a>
+    <span class="separator">›</span>
+    <span class="current">{{ subject_name }}</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-grid">
+    <!-- Progress Widget - Left Side -->
+    <div class="widget progress-widget">
+        <div class="widget-header">
+            <h2 class="widget-title">Test Progress</h2>
+        </div>
+
+        <!-- Add Test Form - Integrated in the widget -->
+        <div class="inline-form">
+            <form id="add-test-form" action="{{ url_for('add_test', subject_name=subject_name) }}" method="post">
+                <div class="form-row">
+                    <input type="text" name="test_name" placeholder="Add new test..." required class="form-control">
+                    <input type="date" name="test_date" required class="form-control date-input">
+                    <button type="submit" class="btn btn-add">Add</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="progress-list">
+            {% if subject_data and subject_data.tests %}
+                {% for test in subject_data.tests %}
+                    <div class="test-card" id="test-{{ test.id }}" onclick="selectTest('{{ test.id }}')" style="cursor: pointer;">
+                        <div class="test-content">
+                            <div class="test-name" id="test-name-{{ test.id }}">{{ test.name }}</div>
+                            <div class="test-date-badge" id="test-date-{{ test.id }}">{{ test.date }}</div>
+                            <div class="test-actions">
+                                <a href="{{ url_for('test_statistics', subject_name=subject_name, test_id=test.id) }}" class="action-icon track-btn" onclick="event.stopPropagation();">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                        <line x1="3" y1="9" x2="21" y2="9"></line>
+                                        <line x1="9" y1="21" x2="9" y2="9"></line>
+                                    </svg>
+                                </a>
+                                <button type="button" class="action-icon edit-btn" onclick="editTest('{{ test.id }}', '{{ test.name }}', '{{ test.date }}')">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                    </svg>
+                                </button>
+                                <form action="{{ url_for('delete_subject_test', subject_name=subject_name, test_id=test.id) }}" method="post" style="display: inline;">
+                                    <button type="submit" class="action-icon" onclick="event.stopPropagation(); return confirm('Are you sure you want to delete this test?');">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="3 6 5 6 21 6"></polyline>
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                        </svg>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div class="progress-container">
+                            <div class="progress-bar" style="width: {{ test.progress }}%"></div>
+                            <span class="progress-percentage">{{ test.progress }}%</span>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-message">No tests added yet. Add your first test above!</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Topic & Resource Management Widget - Right Side -->
+    <div class="widget resource-widget">
+        <div class="widget-header">
+            <h2 class="widget-title">Topics & Resources</h2>
+        </div>
+
+        <div id="topics-instruction" class="empty-message" style="display: block;">
+            Click on a test from the Test Progress section above to manage its topics and resources.
+        </div>
+
+        <!-- Topics & Resources Section -->
+        {% if subject_data and subject_data.tests %}
+            {% for test in subject_data.tests %}
+                <div class="test-topics-section" id="topics-for-test-{{ test.id }}" style="display: none;">
+                    <h3 class="test-name-header">{{ test.name }}</h3>
+
+                    <!-- Add Topic Form -->
+                    <div class="inline-form">
+                        <form action="{{ url_for('add_test_topic', subject_name=subject_name, test_id=test.id) }}" method="post">
+                            <div class="form-row">
+                                <input type="text" name="topic_name" placeholder="Add new topic..." required class="form-control">
+                                <button type="submit" class="btn btn-add">Add Topic</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Topics List -->
+                    <div class="topics-list">
+                        {% if test.topics and test.topics|length > 0 %}
+                            {% for topic in test.topics %}
+                                <div class="topic-card">
+                                    <div class="topic-header">
+                                        <div class="topic-name" id="topic-name-{{ topic.id }}">{{ topic.name }}</div>
+                                        <div class="topic-actions">
+                                            <button type="button" class="action-icon edit-btn" onclick="editTopic('{{ test.id }}', '{{ topic.id }}', '{{ topic.name }}')">
+                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                                </svg>
+                                            </button>
+                                            <form action="{{ url_for('delete_test_topic', subject_name=subject_name, test_id=test.id, topic_id=topic.id) }}" method="post" style="display: inline;">
+                                                <button type="submit" class="action-icon" onclick="event.stopPropagation(); return confirm('Are you sure you want to delete this topic?');">
+                                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                        <polyline points="3 6 5 6 21 6"></polyline>
+                                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                                    </svg>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+
+                                    <!-- Add Resource Form -->
+                                    <div class="resource-form">
+                                        <form action="{{ url_for('add_topic_resource', subject_name=subject_name, test_id=test.id, topic_id=topic.id) }}" method="post">
+                                            <div class="form-row resource-add-row">
+                                                <input type="text" name="resource_name" placeholder="Add resource..." required class="form-control">
+                                                <div class="repeat-counter">
+                                                    <span class="repeat-label">×</span>
+                                                    <input type="number" id="resource-count-{{ topic.id }}" name="resource_count" min="1" value="1" required class="form-control resource-count">
+                                                </div>
+                                                <button type="submit" class="btn btn-add">Add</button>
+                                            </div>
+                                        </form>
+                                    </div>
+
+                                    <!-- Resources List -->
+                                    <div class="resources-list">
+                                        {% if topic.resources and topic.resources|length > 0 %}
+                                            {% for resource in topic.resources %}
+                                                <div class="resource-card">
+                                                    <div class="resource-info">
+                                                        <span class="resource-name" id="resource-name-{{ resource.id }}">{{ resource.name }}</span>
+                                                        <span class="resource-counter">× {{ resource.count }}</span>
+                                                        {% if resource.completed is defined and resource.completed > 0 %}
+                                                            <span class="resource-completed">{{ resource.completed }}/{{ resource.count }}</span>
+                                                        {% endif %}
+                                                    </div>
+                                                    <div class="resource-actions">
+                                                        <button type="button" class="action-icon edit-btn" onclick="editResource('{{ test.id }}', '{{ topic.id }}', '{{ resource.id }}', '{{ resource.name }}', '{{ resource.count }}')">
+                                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                                            </svg>
+                                                        </button>
+                                                        <form action="{{ url_for('delete_topic_resource', subject_name=subject_name, test_id=test.id, topic_id=topic.id, resource_id=resource.id) }}" method="post" style="display: inline;">
+                                                            <button type="submit" class="action-icon" onclick="event.stopPropagation(); return confirm('Are you sure you want to delete this resource?');">
+                                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                                                </svg>
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        {% else %}
+                                            <div class="empty-resource-message">No resources yet. Add some to start tracking progress!</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="empty-topic-message">No topics yet. Add a topic above to get started!</div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+
+    <!-- Completion Tracking Widget -->
+    <div class="widget completion-widget">
+        <div class="widget-header">
+            <h2 class="widget-title">Track Completion</h2>
+        </div>
+
+        <div id="completion-instruction" class="empty-message" style="display: block;">
+            Click on a test from the Test Progress section above to track completion of its resources.
+        </div>
+
+        <!-- Resources by Topic for Selected Test -->
+        {% if subject_data and subject_data.tests %}
+            {% for test in subject_data.tests %}
+                <div class="test-resources-section" id="resources-for-test-{{ test.id }}" style="display: none;">
+                    <h3 class="test-name-header">{{ test.name }}</h3>
+
+                    {% if test.topics and test.topics|length > 0 %}
+                        {% for topic in test.topics %}
+                            <div class="topic-completion-card">
+                                <div class="topic-header">
+                                    <div class="topic-name">{{ topic.name }}</div>
+                                </div>
+
+                                {% if topic.resources and topic.resources|length > 0 %}
+                                    <div class="resources-progress-list">
+                                        {% for resource in topic.resources %}
+                                            <div class="resource-progress-item" data-resource-id="{{ resource.id }}">
+                                                <div class="resource-info">
+                                                    <span class="resource-name">{{ resource.name }}</span>
+                                                    <span class="resource-count">({{ resource.completed if resource.completed is defined else 0 }}/{{ resource.count }})</span>
+                                                    <div class="resource-progress-bar">
+                                                        <div class="resource-progress" style="width: {{ (resource.completed / resource.count * 100) if resource.completed is defined and resource.count > 0 else 0 }}%"></div>
+                                                    </div>
+
+                                                    <!-- Display scores if they exist -->
+                                                    {% if resource.scores %}
+                                                        <div class="resource-scores">
+                                                            <span class="score-label">Scores:</span>
+                                                            {% for score in resource.scores %}
+                                                                <span class="score-badge">{{ score }}%</span>
+                                                            {% endfor %}
+                                                        </div>
+                                                    {% endif %}
+                                                </div>
+                                                <div class="resource-actions">
+                                                    <button class="increment-btn" onclick="trackResourceWithScore('{{ resource.id }}')" {% if resource.completed is defined and resource.completed >= resource.count %}disabled{% endif %}>+</button>
+                                                    <button class="decrement-btn" onclick="updateProgress('{{ resource.id }}', -1)" {% if not resource.completed or resource.completed <= 0 %}disabled{% endif %}>-</button>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    <div class="empty-resources-message">No resources added for this topic.</div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-topic-message">No topics added for this test. Add topics to track progress.</div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+</div>
+
+<!-- Score Input Modal -->
+<div id="scoreModal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal">&times;</span>
+        <h3>Record Completion</h3>
+        <p>Did you receive a score for this resource?</p>
+
+        <div class="score-input-container">
+            <label for="score-input">Score (%):</label>
+            <input type="number" id="score-input" min="0" max="100" placeholder="e.g., 85">
+        </div>
+
+        <div class="modal-buttons">
+            <button id="skip-score-btn" class="btn btn-secondary">No Score (Skip)</button>
+            <button id="submit-score-btn" class="btn btn-primary">Submit Score</button>
+        </div>
+    </div>
+</div>
+
+<!-- Test Edit Modal -->
+<div id="editTestModal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeEditModal('editTestModal')">&times;</span>
+        <h3>Edit Test</h3>
+
+        <form id="edit-test-form" action="{{ url_for('edit_test') }}" method="post">
+            <input type="hidden" name="subject_name" value="{{ subject_name }}">
+            <input type="hidden" id="edit-test-id" name="test_id">
+
+            <div class="score-input-container">
+                <label for="edit-test-name">Test Name:</label>
+                <input type="text" id="edit-test-name" name="test_name" required class="form-control">
+            </div>
+
+            <div class="score-input-container">
+                <label for="edit-test-date">Test Date:</label>
+                <input type="date" id="edit-test-date" name="test_date" required class="form-control">
+            </div>
+
+            <div class="modal-buttons">
+                <button type="button" class="btn btn-secondary" onclick="closeEditModal('editTestModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Topic Edit Modal -->
+<div id="editTopicModal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeEditModal('editTopicModal')">&times;</span>
+        <h3>Edit Topic</h3>
+
+        <form id="edit-topic-form" data-base-url="{{ url_for('edit_test_topic', subject_name=subject_name, test_id='TEST_ID', topic_id='TOPIC_ID') }}" method="post">
+            <input type="hidden" name="subject_name" value="{{ subject_name }}">
+            <input type="hidden" id="edit-topic-test-id" name="test_id">
+            <input type="hidden" id="edit-topic-id" name="topic_id">
+
+            <div class="score-input-container">
+                <label for="edit-topic-name">Topic Name:</label>
+                <input type="text" id="edit-topic-name" name="topic_name" required class="form-control">
+            </div>
+
+            <div class="modal-buttons">
+                <button type="button" class="btn btn-secondary" onclick="closeEditModal('editTopicModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Resource Edit Modal -->
+<div id="editResourceModal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeEditModal('editResourceModal')">&times;</span>
+        <h3>Edit Resource</h3>
+
+        <form id="edit-resource-form" data-base-url="{{ url_for('edit_topic_resource', subject_name=subject_name, test_id='TEST_ID', topic_id='TOPIC_ID', resource_id='RESOURCE_ID') }}" method="post">
+            <input type="hidden" name="subject_name" value="{{ subject_name }}">
+            <input type="hidden" id="edit-resource-test-id" name="test_id">
+            <input type="hidden" id="edit-resource-topic-id" name="topic_id">
+            <input type="hidden" id="edit-resource-id" name="resource_id">
+
+            <div class="score-input-container">
+                <label for="edit-resource-name">Resource Name:</label>
+                <input type="text" id="edit-resource-name" name="resource_name" required class="form-control">
+            </div>
+
+            <div class="score-input-container">
+                <label for="edit-resource-count">Resource Count:</label>
+                <input type="number" id="edit-resource-count" name="resource_count" min="1" required class="form-control">
+            </div>
+
+            <div class="modal-buttons">
+                <button type="button" class="btn btn-secondary" onclick="closeEditModal('editResourceModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<a href="{{ url_for('index') }}" class="btn btn-back">
+    <span class="btn-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+        </svg>
+    </span> Back to Dashboard
+</a>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Layout */
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: auto auto;
+        gap: 25px;
+        margin: 30px 0;
+    }
+
+    /* Progress Widget spans full width in first row */
+    .progress-widget {
+        grid-column: 1 / span 2;
+        grid-row: 1;
+    }
+
+    /* Resource Widget in second row, first column */
+    .resource-widget {
+        grid-column: 1;
+        grid-row: 2;
+    }
+
+    /* Completion Widget in second row, second column */
+    .completion-widget {
+        grid-column: 2;
+        grid-row: 2;
+    }
+
+    /* Widgets */
+    .widget {
+        background-color: var(--widget-bg);
+        border-radius: 20px;
+        padding: 25px;
+        border: none;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+        position: relative;
+        backdrop-filter: blur(5px);
+        min-height: 400px;
+        transition: all 0.3s ease;
+    }
+
+    .widget-header {
+        margin-bottom: 20px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid rgba(169, 149, 239, 0.2);
+    }
+
+    .widget-title {
+        font-family: 'Architects Daughter', cursive;
+        font-size: 1.6rem;
+        margin: 0;
+        display: flex;
+        align-items: center;
+    }
+
+    .widget-title::before {
+        margin-right: 10px;
+        display: inline-block;
+        width: 22px;
+        height: 22px;
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: contain;
+        content: "";
+    }
+
+    .progress-widget .widget-title::before {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23546079' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'%3E%3C/path%3E%3Cpolyline points='14 2 14 8 20 8'%3E%3C/polyline%3E%3Cline x1='16' y1='13' x2='8' y2='13'%3E%3C/line%3E%3Cline x1='16' y1='17' x2='8' y2='17'%3E%3C/line%3E%3Cpolyline points='10 9 9 9 8 9'%3E%3C/polyline%3E%3C/svg%3E");
+    }
+
+    .resource-widget .widget-title::before {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23546079' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 19.5A2.5 2.5 0 0 1 6.5 17H20'%3E%3C/path%3E%3Cpath d='M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z'%3E%3C/path%3E%3C/svg%3E");
+    }
+
+    .completion-widget .widget-title::before {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23546079' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M22 11.08V12a10 10 0 1 1-5.93-9.14'%3E%3C/path%3E%3Cpolyline points='22 4 12 14.01 9 11.01'%3E%3C/polyline%3E%3C/svg%3E");
+    }
+
+    /* Inline forms */
+    .inline-form {
+        margin-bottom: 20px;
+        background-color: rgba(255, 255, 255, 0.7);
+        border-radius: 12px;
+        padding: 15px;
+        border: 1px solid rgba(169, 149, 239, 0.2);
+    }
+
+    .form-row {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .form-control {
+        flex: 1;
+        padding: 12px 15px;
+        border: 1px solid rgba(169, 149, 239, 0.3);
+        border-radius: 10px;
+        font-family: 'Comic Neue', cursive;
+        font-size: 1rem;
+        background-color: var(--light);
+        transition: all 0.3s ease;
+    }
+
+    .form-control:focus {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(169, 149, 239, 0.2);
+    }
+
+    .date-input {
+        max-width: 150px;
+    }
+
+    .resource-count {
+        max-width: 60px;
+        text-align: center;
+    }
+
+    .repeat-counter {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        white-space: nowrap;
+    }
+
+    .repeat-label {
+        font-size: 1.2rem;
+        color: var(--dark);
+    }
+
+    .btn {
+        padding: 10px 15px;
+        border-radius: 10px;
+        font-family: 'Comic Neue', cursive;
+        font-weight: bold;
+        font-size: 0.95rem;
+        cursor: pointer;
+        border: none;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    .btn-add {
+        background-color: var(--secondary);
+        color: var(--light);
+    }
+
+    .btn-back {
+        display: block;
+        margin: 20px auto;
+        background-color: var(--primary);
+        color: var(--light);
+        width: fit-content;
+        font-size: 1.1rem;
+        padding: 12px 20px;
+        text-decoration: none;
+    }
+
+    .btn-icon {
+        margin-right: 8px;
+    }
+
+    .action-icon {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        margin: 0 2px;
+        color: var(--dark);
+    }
+
+    .action-icon:hover {
+        background-color: rgba(255, 255, 255, 0.8);
+        transform: scale(1.15);
+    }
+
+    .track-btn {
+        color: var(--secondary-dark);
+    }
+
+    .edit-btn {
+        color: var(--primary);
+    }
+
+    .edit-btn:hover {
+        background-color: rgba(255, 255, 255, 0.8);
+        color: var(--secondary);
+    }
+
+    .selected-test {
+        border: 2px solid var(--primary);
+        box-shadow: 0 5px 15px rgba(184, 164, 244, 0.3);
+        transform: translateY(-3px);
+        background-color: #f8f5ff;
+    }
+
+    /* Test selector */
+    .test-selector {
+        margin-bottom: 25px;
+    }
+
+    .test-selector label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: bold;
+        color: var(--dark);
+        font-size: 1.1rem;
+    }
+
+    .test-selector select {
+        width: 100%;
+        padding: 12px 15px;
+        border: 1px solid rgba(169, 149, 239, 0.3);
+        border-radius: 10px;
+        font-family: 'Comic Neue', cursive;
+        font-size: 1rem;
+        background-color: rgba(255, 255, 255, 0.7);
+    }
+
+    .test-name-header {
+        font-family: 'Architects Daughter', cursive;
+        font-size: 1.4rem;
+        margin: 20px 0 15px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid rgba(169, 149, 239, 0.2);
+    }
+
+    /* Test cards - New minimalist style */
+    .test-card {
+        background-color: var(--light);
+        border-radius: 16px;
+        margin-bottom: 15px;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .test-card:hover {
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+    }
+
+    .test-content {
+        padding: 18px;
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        justify-content: space-between;
+    }
+
+    .test-name {
+        flex: 1;
+        font-family: 'Comic Neue', cursive;
+        font-size: 1.3rem;
+        font-weight: bold;
+        margin-right: 10px;
+    }
+
+    .test-date-badge {
+        background-color: #e0d8ff;
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        margin-right: 15px;
+    }
+
+    .test-actions {
+        display: flex;
+        gap: 5px;
+    }
+
+    .progress-container {
+        height: 15px;
+        background-color: #f0f0f0;
+        border-radius: 0;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .progress-percentage {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        text-align: center;
+        line-height: 15px;
+        font-size: 0.7rem;
+        font-weight: bold;
+        color: var(--dark);
+        text-shadow: 0 0 2px rgba(255, 255, 255, 0.7);
+    }
+
+    /* Topic cards - Matching minimalist style */
+    .topic-card {
+        background-color: #bdd8ff;
+        border-radius: 16px;
+        padding: 15px;
+        margin-bottom: 15px;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+        transition: all 0.3s ease;
+    }
+
+    .topic-card:hover {
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    .topic-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+    }
+
+    .topic-name {
+        font-family: 'Comic Neue', cursive;
+        font-size: 1.1rem;
+        font-weight: bold;
+    }
+
+    .resource-form {
+        margin: 15px 0 10px;
+        padding: 12px;
+        background-color: rgba(255, 255, 255, 0.6);
+        border-radius: 10px;
+        border: 1px solid rgba(126, 182, 255, 0.2);
+    }
+
+    .resource-add-row {
+        display: flex;
+        align-items: center;
+    }
+
+    /* Resource cards - Matching minimalist style */
+    .resources-list {
+        margin-top: 15px;
+    }
+
+    .resource-card {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 15px;
+        background-color: #d3e5ff;
+        border-radius: 12px;
+        margin-bottom: 10px;
+        transition: all 0.2s ease;
+        border: 1px solid rgba(230, 230, 240, 0.5);
+    }
+
+    .resource-card:hover {
+        background-color: rgba(255, 255, 255, 1);
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+
+    .resource-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex: 1;
+    }
+
+    .resource-name {
+        font-weight: bold;
+        color: var(--dark);
+    }
+
+    .resource-counter {
+        font-size: 0.9rem;
+        background-color: rgba(126, 182, 255, 0.1);
+        padding: 3px 8px;
+        border-radius: 5px;
+    }
+
+    .resource-completed {
+        font-size: 0.9rem;
+        font-weight: bold;
+    }
+
+    .resource-actions {
+        display: flex;
+        gap: 5px;
+    }
+
+    /* Empty states */
+    .empty-message, .empty-topic-message, .empty-resource-message, .empty-resources-message {
+        text-align: center;
+        font-style: italic;
+        font-size: 1rem;
+        color: var(--dark);
+        padding: 20px;
+        background-color: rgba(255, 255, 255, 0.5);
+        border-radius: 12px;
+        border: 1px dashed rgba(169, 149, 239, 0.3);
+        margin: 10px 0;
+    }
+
+    /* Completion Widget Styles */
+    .topic-completion-card {
+        background-color: #e0d8ff;
+        border-radius: 16px;
+        padding: 15px;
+        margin-bottom: 15px;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+        transition: all 0.3s ease;
+    }
+
+    .topic-completion-card:hover {
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    .resources-progress-list {
+        margin-top: 15px;
+    }
+
+    .resource-progress-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 15px;
+        background-color: #f9f9f9;
+        border-radius: 12px;
+        margin-bottom: 10px;
+        transition: all 0.2s ease;
+        border: 1px solid rgba(230, 230, 240, 0.5);
+    }
+
+    .resource-progress-item:hover {
+        background-color: rgba(255, 255, 255, 1);
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+
+    .resource-progress-bar {
+        height: 8px;
+        background-color: #f0f0f0;
+        border-radius: 4px;
+        overflow: hidden;
+        width: 100%;
+        margin-top: 5px;
+    }
+
+    .resource-progress {
+        height: 100%;
+        background-color: var(--success);
+        transition: width 0.3s ease;
+    }
+
+    .increment-btn, .decrement-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background-color: var(--secondary);
+        color: white;
+        font-size: 1.2rem;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+    }
+
+    .increment-btn:hover {
+        background-color: var(--success);
+        transform: scale(1.1);
+    }
+
+    .decrement-btn {
+        background-color: var(--primary);
+        color: var(--light);
+    }
+
+    .decrement-btn:hover {
+        background-color: var(--danger);
+        color: white;
+        transform: scale(1.1);
+    }
+
+    .increment-btn:disabled, .decrement-btn:disabled {
+        background-color: #f0f0f0;
+        color: #ccc;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    /* Score Styles */
+    .resource-scores {
+        margin-top: 8px;
+    }
+
+    .score-label {
+        font-size: 0.9rem;
+        color: var(--dark);
+        font-style: italic;
+    }
+
+    .score-badge {
+        display: inline-block;
+        background-color: #d3e5ff;
+        color: var(--dark);
+        font-size: 0.85rem;
+        padding: 2px 8px;
+        border-radius: 12px;
+        margin-left: 5px;
+    }
+
+    /* Modal Styles */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal-content {
+        background-color: white;
+        border-radius: 15px;
+        border: 3px solid var(--dark);
+        box-shadow: 5px 5px 0 var(--dark);
+        padding: 25px;
+        width: 90%;
+        max-width: 500px;
+        position: relative;
+        text-align: center;
+    }
+
+    .close-modal {
+        position: absolute;
+        top: 10px;
+        right: 15px;
+        font-size: 1.5rem;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+    .score-input-container {
+        margin: 20px 0;
+    }
+
+    .score-input-container label {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 1.1rem;
+        font-weight: bold;
+    }
+
+    #score-input {
+        width: 100px;
+        padding: 10px;
+        border: 2px solid var(--primary-light);
+        border-radius: 8px;
+        font-size: 1.1rem;
+        text-align: center;
+    }
+
+    .modal-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+        margin-top: 20px;
+    }
+
+    .modal-buttons .btn {
+        min-width: 150px;
+    }
+
+    /* Cat paw and decoration styles */
+    .cat-paw {
+        position: absolute;
+        bottom: -15px;
+        right: -15px;
+        font-size: 1.8rem;
+        transform: rotate(15deg);
+        z-index: 1;
+    }
+
+    /* Responsive design */
+    @media (max-width: 992px) {
+        .dashboard-grid {
+            grid-template-columns: 1fr;
+            grid-template-rows: auto auto auto;
+        }
+
+        .progress-widget, .resource-widget, .completion-widget {
+            grid-column: 1;
+        }
+
+        .progress-widget { grid-row: 1; }
+        .resource-widget { grid-row: 2; }
+        .completion-widget { grid-row: 3; }
+    }
+
+    @media (max-width: 768px) {
+        .form-row {
+            flex-direction: column;
+        }
+
+        .form-row .form-control,
+        .form-row .btn {
+            width: 100%;
+        }
+
+        .test-content {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .test-date-badge {
+            margin: 5px 0;
+        }
+
+        .test-actions {
+            align-self: flex-end;
+        }
+
+        .resource-info {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 5px;
+        }
+
+        .modal-content {
+            width: 95%;
+            padding: 20px;
+        }
+
+        .modal-buttons {
+            flex-direction: column;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Initialize default settings when DOM is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set today's date as the default for date inputs
+        const today = new Date().toISOString().split('T')[0];
+        const dateInputs = document.querySelectorAll('input[type="date"]');
+        dateInputs.forEach(input => {
+            if (!input.value) {
+                input.value = today;
+            }
+        });
+
+        // Set up score modal functionality
+        const modal = document.getElementById('scoreModal');
+        const closeBtn = document.getElementsByClassName('close-modal')[0];
+        const skipBtn = document.getElementById('skip-score-btn');
+        const submitBtn = document.getElementById('submit-score-btn');
+        const scoreInput = document.getElementById('score-input');
+
+        // Close modal when clicking X
+        closeBtn.onclick = function() {
+            modal.style.display = 'none';
+        }
+
+        // Close modal when clicking outside of it
+        window.onclick = function(event) {
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+            if (event.target === document.getElementById('editTestModal')) {
+                document.getElementById('editTestModal').style.display = 'none';
+            }
+            if (event.target === document.getElementById('editTopicModal')) {
+                document.getElementById('editTopicModal').style.display = 'none';
+            }
+            if (event.target === document.getElementById('editResourceModal')) {
+                document.getElementById('editResourceModal').style.display = 'none';
+            }
+        }
+
+        // Handle skip button
+        skipBtn.onclick = function() {
+            if (currentResourceId) {
+                updateProgress(currentResourceId, 1);
+                modal.style.display = 'none';
+            }
+        }
+
+        // Handle submit button
+        submitBtn.onclick = function() {
+            const score = parseFloat(scoreInput.value);
+
+            if (isNaN(score) || score < 0 || score > 100) {
+                alert('Please enter a valid score between 0 and 100');
+                return;
+            }
+
+            if (currentResourceId) {
+                updateProgress(currentResourceId, 1, score);
+                modal.style.display = 'none';
+            }
+        }
+
+        // Set up edit forms submission
+        setupEditFormHandlers();
+    });
+
+    // Function to create a flash message
+    function showFlashMessage(message, category) {
+        const flashContainer = document.createElement('div');
+        flashContainer.className = `alert alert-${category}`;
+        flashContainer.textContent = message;
+
+        // Find a suitable container to show the message
+        const container = document.querySelector('.container') || document.body;
+        container.insertBefore(flashContainer, container.firstChild);
+
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            flashContainer.remove();
+        }, 5000);
+    }
+
+    // Function to show topics for the selected test
+    function showTopicsForTest(testId) {
+        // Hide all topic sections
+        document.querySelectorAll('.test-topics-section').forEach(section => {
+            section.style.display = 'none';
+        });
+
+        // Show the selected test's topic section
+        if (testId) {
+            const selectedSection = document.getElementById('topics-for-test-' + testId);
+            if (selectedSection) {
+                selectedSection.style.display = 'block';
+            }
+        }
+    }
+
+    // Function to show resources for the selected test
+    function showResourcesForTest(testId) {
+        // Hide all resource sections
+        document.querySelectorAll('.test-resources-section').forEach(section => {
+            section.style.display = 'none';
+        });
+
+        // Show the selected test's resources section
+        if (testId) {
+            const selectedSection = document.getElementById('resources-for-test-' + testId);
+            if (selectedSection) {
+                selectedSection.style.display = 'block';
+            }
+        }
+    }
+
+    // Score tracking functionality
+    let currentResourceId = null;
+
+    // Function to select a test when clicking a test card
+    function selectTest(testId) {
+        // Hide instruction messages
+        document.getElementById('topics-instruction').style.display = 'none';
+        document.getElementById('completion-instruction').style.display = 'none';
+
+        // Display the content for both widgets
+        showTopicsForTest(testId);
+        showResourcesForTest(testId);
+
+        // Highlight the selected test card
+        document.querySelectorAll('.test-card').forEach(card => {
+            card.classList.remove('selected-test');
+        });
+        document.getElementById('test-' + testId).classList.add('selected-test');
+    }
+
+    // Test editing functionality
+    function editTest(testId, testName, testDate) {
+        // Prevent the event from bubbling up to the card click handler
+        event.stopPropagation();
+
+        // Populate the form fields
+        document.getElementById('edit-test-id').value = testId;
+        document.getElementById('edit-test-name').value = testName;
+        document.getElementById('edit-test-date').value = testDate;
+
+        // Show the modal
+        const modal = document.getElementById('editTestModal');
+        modal.style.display = 'flex';
+    }
+
+    // Topic editing functionality
+    function editTopic(testId, topicId, topicName) {
+        // Prevent the event from bubbling up
+        event.stopPropagation();
+
+        // Populate the form fields
+        document.getElementById('edit-topic-test-id').value = testId;
+        document.getElementById('edit-topic-id').value = topicId;
+        document.getElementById('edit-topic-name').value = topicName;
+
+        // Store original name for reference in the update function
+        const topicElement = document.getElementById(`topic-name-${topicId}`);
+        if (topicElement && !topicElement.dataset.originalName) {
+            topicElement.dataset.originalName = topicName;
+        }
+
+        // Show the modal
+        const modal = document.getElementById('editTopicModal');
+        modal.style.display = 'flex';
+    }
+
+    // Resource editing functionality
+    function editResource(testId, topicId, resourceId, resourceName, resourceCount) {
+        // Prevent the event from bubbling up
+        event.stopPropagation();
+
+        // Populate the form fields
+        document.getElementById('edit-resource-test-id').value = testId;
+        document.getElementById('edit-resource-topic-id').value = topicId;
+        document.getElementById('edit-resource-id').value = resourceId;
+        document.getElementById('edit-resource-name').value = resourceName;
+        document.getElementById('edit-resource-count').value = resourceCount;
+
+        // Show the modal
+        const modal = document.getElementById('editResourceModal');
+        modal.style.display = 'flex';
+    }
+
+    function closeEditModal(modalId) {
+        const modal = document.getElementById(modalId);
+        modal.style.display = 'none';
+    }
+
+    function trackResourceWithScore(resourceId) {
+        // Store current resource ID
+        currentResourceId = resourceId;
+
+        // Show the modal
+        const modal = document.getElementById('scoreModal');
+        modal.style.display = 'flex';
+
+        // Clear previous input value
+        document.getElementById('score-input').value = '';
+    }
+
+    function updateProgress(resourceId, change, score = null) {
+        // Disable buttons during the update to prevent multiple clicks
+        const resourceItem = document.querySelector(`.resource-progress-item[data-resource-id="${resourceId}"]`);
+        const incrementBtn = resourceItem.querySelector('.increment-btn');
+        const decrementBtn = resourceItem.querySelector('.decrement-btn');
+
+        incrementBtn.disabled = true;
+        decrementBtn.disabled = true;
+
+        fetch('/update-progress', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                resource_id: resourceId,
+                change: change,
+                score: score
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update the UI without reloading the page
+                const resourceCount = resourceItem.querySelector('.resource-count');
+                resourceCount.textContent = `(${data.completed}/${data.total})`;
+
+                // Update progress bar
+                const progressBar = resourceItem.querySelector('.resource-progress');
+                const percentage = (data.completed / data.total) * 100;
+                progressBar.style.width = `${percentage}%`;
+
+                // Enable/disable decrement button based on completion
+                if (data.completed <= 0) {
+                    decrementBtn.disabled = true;
+                } else {
+                    decrementBtn.disabled = false;
+                }
+
+                // Enable/disable increment button based on completion
+                if (data.completed >= data.total) {
+                    incrementBtn.disabled = true;
+                } else {
+                    incrementBtn.disabled = false;
+                }
+
+                // Update scores display if a score was provided
+                if (score !== null) {
+                    // Check if resource-scores exists
+                    let scoresContainer = resourceItem.querySelector('.resource-scores');
+
+                    if (!scoresContainer) {
+                        // Create scores container if it doesn't exist
+                        scoresContainer = document.createElement('div');
+                        scoresContainer.className = 'resource-scores';
+
+                        const label = document.createElement('span');
+                        label.className = 'score-label';
+                        label.textContent = 'Scores:';
+
+                        scoresContainer.appendChild(label);
+                        resourceItem.querySelector('.resource-info').appendChild(scoresContainer);
+                    }
+
+                    // Add new score badge
+                    const scoreBadge = document.createElement('span');
+                    scoreBadge.className = 'score-badge';
+                    scoreBadge.textContent = `${score}%`;
+                    scoresContainer.appendChild(scoreBadge);
+                }
+
+                // Update the test's progress bar if it exists
+                const testId = resourceItem.closest('.test-resources-section').id.replace('resources-for-test-', '');
+                const testCard = document.getElementById(`test-${testId}`);
+                if (testCard) {
+                    const progressBar = testCard.querySelector('.progress-bar');
+                    if (progressBar) {
+                        progressBar.style.width = `${data.progress}%`;
+                        const progressPercentage = testCard.querySelector('.progress-percentage');
+                        if (progressPercentage) {
+                            progressPercentage.textContent = `${data.progress}%`;
+                        }
+                    }
+                }
+            } else {
+                alert(data.message);
+            }
+
+            // Re-enable buttons
+            incrementBtn.disabled = false;
+            decrementBtn.disabled = false;
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while updating progress');
+            incrementBtn.disabled = false;
+            decrementBtn.disabled = false;
+        });
+    }
+
+    // Set up edit form handlers
+    function setupEditFormHandlers() {
+        // Edit Topic Form
+        const editTopicForm = document.getElementById('edit-topic-form');
+        if (editTopicForm) {
+            editTopicForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                // Update the form action with dynamic values
+                const testId = document.getElementById('edit-topic-test-id').value;
+                const topicId = document.getElementById('edit-topic-id').value;
+                const formAction = editTopicForm.getAttribute('data-base-url')
+                    .replace('TEST_ID', testId)
+                    .replace('TOPIC_ID', topicId);
+
+                // Get form data
+                const formData = new FormData(this);
+                const topicName = document.getElementById('edit-topic-name').value;
+
+                fetch(formAction, {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if (response.ok) {
+                        // Update topic name in UI
+                        const topicElement = document.getElementById(`topic-name-${topicId}`);
+                        if (topicElement) {
+                            topicElement.textContent = topicName;
+                        }
+
+                        // Update topic name in completion widget
+                        const testTopicsSection = document.getElementById(`resources-for-test-${testId}`);
+                        if (testTopicsSection) {
+                            const topicCards = testTopicsSection.querySelectorAll('.topic-completion-card');
+                            for (let i = 0; i < topicCards.length; i++) {
+                                const topicNameElem = topicCards[i].querySelector('.topic-name');
+                                // Find the matching topic by comparing content with the original name
+                                if (topicNameElem.textContent === document.getElementById(`topic-name-${topicId}`).dataset.originalName) {
+                                    topicNameElem.textContent = topicName;
+                                    break;
+                                }
+                            }
+                        }
+
+                        // Store the new name in the data attribute for future reference
+                        topicElement.dataset.originalName = topicName;
+
+                        // Close modal
+                        closeEditModal('editTopicModal');
+
+                        // Show success message
+                        showFlashMessage(`Topic "${topicName}" updated successfully!`, 'success');
+
+                        return;
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data && !data.success) {
+                        showFlashMessage(data.message || 'An error occurred', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showFlashMessage('An error occurred while updating the topic', 'error');
+                });
+            });
+        }
+
+        // Edit Resource Form
+        const editResourceForm = document.getElementById('edit-resource-form');
+        if (editResourceForm) {
+            editResourceForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                // Update the form action with dynamic values
+                const testId = document.getElementById('edit-resource-test-id').value;
+                const topicId = document.getElementById('edit-resource-topic-id').value;
+                const resourceId = document.getElementById('edit-resource-id').value;
+
+                const formAction = editResourceForm.getAttribute('data-base-url')
+                    .replace('TEST_ID', testId)
+                    .replace('TOPIC_ID', topicId)
+                    .replace('RESOURCE_ID', resourceId);
+
+                // Get form data
+                const formData = new FormData(this);
+                const resourceName = document.getElementById('edit-resource-name').value;
+                const resourceCount = document.getElementById('edit-resource-count').value;
+
+                fetch(formAction, {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if (response.ok) {
+                        // Update resource info in UI
+                        // Update in resources list
+                        const resourceNameElem = document.getElementById(`resource-name-${resourceId}`);
+                        if (resourceNameElem) {
+                            resourceNameElem.textContent = resourceName;
+                            // Update count
+                            const counterElem = resourceNameElem.closest('.resource-info').querySelector('.resource-counter');
+                            if (counterElem) {
+                                counterElem.textContent = `× ${resourceCount}`;
+                            }
+                        }
+
+                        // Update in progress tracking widget
+                        const resourceItems = document.querySelectorAll(`.resource-progress-item[data-resource-id="${resourceId}"]`);
+                        resourceItems.forEach(item => {
+                            const nameElem = item.querySelector('.resource-name');
+                            if (nameElem) {
+                                nameElem.textContent = resourceName;
+                            }
+
+                            // Update count in format (completed/count)
+                            const countElem = item.querySelector('.resource-count');
+                            if (countElem) {
+                                const currentText = countElem.textContent;
+                                const completed = currentText.match(/\((\d+)\//);
+                                if (completed && completed[1]) {
+                                    countElem.textContent = `(${completed[1]}/${resourceCount})`;
+                                }
+                            }
+
+                            // Update progress bar
+                            const progressBar = item.querySelector('.resource-progress');
+                            if (progressBar) {
+                                const completed = parseInt(item.querySelector('.resource-count').textContent.match(/\((\d+)\//)[1]);
+                                const percentage = (completed / resourceCount * 100);
+                                progressBar.style.width = `${percentage}%`;
+                            }
+                        });
+
+                        // Close modal
+                        closeEditModal('editResourceModal');
+
+                        // Show success message
+                        showFlashMessage(`Resource "${resourceName}" updated successfully!`, 'success');
+
+                        return;
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data && !data.success) {
+                        showFlashMessage(data.message || 'An error occurred', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showFlashMessage('An error occurred while updating the resource', 'error');
+                });
+            });
+        }
+    }
+</script>
+{% endblock %}

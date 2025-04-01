@@ -1,0 +1,887 @@
+{% extends "base.html" %}
+
+{% block title %}Neko Study Quest - Statistics Dashboard{% endblock %}
+
+{% block page_title %}Study Stats Central{% endblock %}
+
+{% block subtitle %}Your Purrfect Progress Tracker{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{{ url_for('index') }}">Home</a>
+    <span class="separator">›</span>
+    <span class="current">Statistics Dashboard</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Info Box -->
+<div class="info-box">
+    <div class="info-title">Statistics Dashboard</div>
+    <div class="info-content">
+        Track your study progress and monitor your improvement for each upcoming test. See detailed analytics of your study habits over time to optimize your learning.
+    </div>
+</div>
+
+<!-- Summary Stats Cards -->
+<div class="summary-stats">
+    <div class="summary-card">
+        <div class="summary-icon">📚</div>
+        <div class="summary-value">{{ stats_summary.total_tests }}</div>
+        <div class="summary-label">Total Tests</div>
+    </div>
+    <div class="summary-card">
+        <div class="summary-icon">📝</div>
+        <div class="summary-value">{{ stats_summary.total_topics }}</div>
+        <div class="summary-label">Total Topics</div>
+    </div>
+    <div class="summary-card">
+        <div class="summary-icon">✅</div>
+        <div class="summary-value">{{ stats_summary.completed_resources }}/{{ stats_summary.total_resources }}</div>
+        <div class="summary-label">Resources Completed</div>
+    </div>
+    <div class="summary-card">
+        <div class="summary-icon">📊</div>
+        <div class="summary-value">{{ stats_summary.overall_completion }}%</div>
+        <div class="summary-label">Overall Completion</div>
+    </div>
+</div>
+
+<!-- Stats Grid -->
+<div class="stats-grid">
+    <!-- Daily Progress Card -->
+    <div class="stats-card wide">
+        <div class="card-header">
+            <h2 class="card-title daily">Daily Study Progress</h2>
+        </div>
+        <div class="chart-container">
+            {% if date_progress and date_progress|length > 0 %}
+                <canvas id="dailyProgressChart"></canvas>
+            {% else %}
+                <div class="no-data-message">No daily progress data recorded yet. Start tracking your progress!</div>
+            {% endif %}
+            <div class="chart-corner top-left">✨</div>
+            <div class="chart-corner top-right">🌟</div>
+            <div class="chart-corner bottom-left">⭐</div>
+            <div class="chart-corner bottom-right">✨</div>
+        </div>
+        <div class="cat-paw">🐾</div>
+    </div>
+
+    <!-- Subject Progress Card -->
+    <div class="stats-card">
+        <div class="card-header">
+            <h2 class="card-title subjects">Progress By Subject</h2>
+        </div>
+        <div class="chart-container">
+            {% if subject_completion and subject_completion.values()|selectattr('total', 'gt', 0)|list|length > 0 %}
+                <canvas id="subjectProgressChart"></canvas>
+            {% else %}
+                <div class="no-data-message">No subject data available yet. Add resources to your subjects!</div>
+            {% endif %}
+            <div class="chart-corner top-left">✨</div>
+            <div class="chart-corner top-right">🌟</div>
+            <div class="chart-corner bottom-left">⭐</div>
+            <div class="chart-corner bottom-right">✨</div>
+        </div>
+        <div class="cat-paw">🐾</div>
+    </div>
+
+    <!-- Test Score Trends Card -->
+    <div class="stats-card">
+        <div class="card-header">
+            <h2 class="card-title score-trends">Test Progress</h2>
+        </div>
+        <div class="chart-container">
+            {% if subject_performance and subject_performance.values()|selectattr('tests', 'gt', 0)|list|length > 0 %}
+                <canvas id="scoreProgressChart"></canvas>
+            {% else %}
+                <div class="no-data-message">No progress data available yet. Add tests to your subjects!</div>
+            {% endif %}
+            <div class="chart-corner top-left">✨</div>
+            <div class="chart-corner top-right">🌟</div>
+            <div class="chart-corner bottom-left">⭐</div>
+            <div class="chart-corner bottom-right">✨</div>
+        </div>
+        <div class="cat-paw">🐾</div>
+    </div>
+
+    <!-- Upcoming Tests Card -->
+    <div class="stats-card wide">
+        <div class="card-header">
+            <h2 class="card-title upcoming">Upcoming Tests</h2>
+        </div>
+        {% if upcoming_tests and upcoming_tests|length > 0 %}
+            <div class="upcoming-tests-grid">
+                {% for test in upcoming_tests %}
+                    <div class="upcoming-test-card">
+                        <div class="upcoming-test-header">
+                            <div class="upcoming-test-title">{{ test.name }}</div>
+                            <div class="upcoming-test-date">{{ test.date }}</div>
+                        </div>
+                        <div class="upcoming-test-subject">{{ test.subject_name }}</div>
+                        <div class="upcoming-test-progress">
+                            <div class="upcoming-test-progress-bar" style="width: {{ test.progress }}%"></div>
+                            <span class="upcoming-test-progress-label">{{ test.progress }}%</span>
+                        </div>
+                        <div class="upcoming-test-actions">
+                            <a href="{{ url_for('track_progress', subject_name=test.subject_name, test_id=test.id) }}" class="upcoming-test-btn">Track</a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="no-data-message">No upcoming tests scheduled for the next week. Plan your studies!</div>
+        {% endif %}
+        <div class="cat-paw">🐾</div>
+    </div>
+
+    <!-- All Tests Table -->
+    <div class="stats-card wide">
+        <div class="card-header">
+            <h2 class="card-title all-tests">All Tests Overview</h2>
+        </div>
+        {% if all_tests and all_tests|length > 0 %}
+            <div class="tests-table-container">
+                <table class="tests-table">
+                    <thead>
+                        <tr>
+                            <th>Test</th>
+                            <th>Subject</th>
+                            <th>Date</th>
+                            <th>Progress</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for test in all_tests %}
+                            <tr class="{% if test.is_past %}past-test{% else %}upcoming-test{% endif %}">
+                                <td>{{ test.name }}</td>
+                                <td>{{ test.subject_name }}</td>
+                                <td>{{ test.date }}</td>
+                                <td>
+                                    <div class="table-progress-container">
+                                        <div class="table-progress-bar" style="width: {{ test.progress }}%"></div>
+                                        <span class="table-progress-label">{{ test.progress }}%</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('track_progress', subject_name=test.subject_name, test_id=test.id) }}" class="table-action-btn">Track</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="no-data-message">No tests available yet. Add tests to your subjects!</div>
+        {% endif %}
+        <div class="cat-paw">🐾</div>
+    </div>
+
+
+<!-- Back to Home Link -->
+<a href="{{ url_for('index') }}" class="back-button">Back to Dashboard</a>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .info-box {
+        background-color: rgba(255, 255, 255, 0.8);
+        border-radius: 15px;
+        padding: 20px;
+        border: 3px solid var(--dark);
+        box-shadow: 5px 5px 0 var(--dark);
+        margin-bottom: 25px;
+        position: relative;
+        backdrop-filter: blur(5px);
+    }
+
+    .info-title {
+        font-family: 'Bangers', cursive;
+        font-size: 1.8rem;
+        color: var(--secondary);
+        margin-bottom: 10px;
+    }
+
+    .info-content {
+        font-family: 'Comic Neue', cursive;
+        font-size: 1.1rem;
+        line-height: 1.5;
+    }
+
+    .stats-title-container {
+        position: relative;
+        padding: 15px 0;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+
+    .summary-stats {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+
+    .summary-card {
+        background-color: rgba(255, 255, 255, 0.8);
+        padding: 20px;
+        border-radius: 15px;
+        text-align: center;
+        border: 3px solid var(--dark);
+        box-shadow: 3px 3px 0 var(--dark);
+        transition: all 0.3s ease;
+    }
+
+    .summary-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 5px 5px 0 var(--dark);
+    }
+
+    .summary-icon {
+        font-size: 2.2rem;
+        margin-bottom: 5px;
+    }
+
+    .summary-value {
+        font-family: 'Bangers', cursive;
+        font-size: 2.5rem;
+        color: var(--secondary);
+        margin-bottom: 5px;
+    }
+
+    .summary-label {
+        font-family: 'Comic Neue', cursive;
+        font-weight: bold;
+        color: var(--dark);
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+        margin-top: 30px;
+    }
+
+    .stats-card {
+        background-color: rgba(255, 255, 255, 0.8);
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 5px 5px 0 var(--dark);
+        border: 3px solid var(--dark);
+        position: relative;
+        backdrop-filter: blur(5px);
+    }
+
+    .stats-card.wide {
+        grid-column: span 2;
+    }
+
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 2px dashed var(--primary-light);
+    }
+
+    .card-title {
+        font-family: 'Bangers', cursive;
+        color: var(--secondary);
+        font-size: 1.6rem;
+        margin: 0;
+        letter-spacing: 1px;
+        display: flex;
+        align-items: center;
+    }
+
+    .card-title::before {
+        margin-right: 10px;
+        font-size: 1.4rem;
+    }
+
+    .card-title.daily::before {
+        content: "📅";
+    }
+
+    .card-title.subjects::before {
+        content: "📚";
+    }
+
+    .card-title.test-comparison::before {
+        content: "📝";
+    }
+
+    .card-title.score-trends::before {
+        content: "🏆";
+    }
+
+    .card-title.streak::before {
+        content: "🔥";
+    }
+
+    .card-title.upcoming::before {
+        content: "🗓️";
+    }
+
+    .card-title.all-tests::before {
+        content: "📋";
+    }
+
+    .chart-container {
+        height: 300px;
+        position: relative;
+    }
+
+    .no-data-message {
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        font-style: italic;
+        color: var(--dark);
+        padding: 20px;
+        background-color: rgba(255, 255, 255, 0.5);
+        border-radius: 10px;
+        border: 1px dashed var(--primary);
+    }
+
+    .metrics-container {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 15px;
+        margin-top: 10px;
+    }
+
+    .metric-box {
+        background-color: rgba(255, 255, 255, 0.7);
+        border-radius: 10px;
+        padding: 15px;
+        text-align: center;
+        border: 2px solid var(--primary-light);
+    }
+
+    .metric-value {
+        font-size: 2rem;
+        font-weight: bold;
+        color: var(--secondary-dark);
+        margin-bottom: 5px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .metric-value::before {
+        margin-right: 5px;
+    }
+
+    .metric-label {
+        font-size: 0.9rem;
+        color: var(--dark);
+    }
+
+    .metric-value.completed::before {
+        content: "✅";
+    }
+
+    .metric-value.streak::before {
+        content: "🔥";
+    }
+
+    .metric-value.average::before {
+        content: "🏆";
+    }
+
+    .metric-value.upcoming::before {
+        content: "🗓️";
+    }
+
+    /* Upcoming tests styling */
+    .upcoming-tests-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 15px;
+    }
+
+    .upcoming-test-card {
+        background-color: rgba(255, 255, 255, 0.7);
+        border-radius: 10px;
+        padding: 15px;
+        border: 2px solid var(--primary-light);
+        transition: all 0.3s ease;
+    }
+
+    .upcoming-test-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .upcoming-test-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 5px;
+    }
+
+    .upcoming-test-title {
+        font-weight: bold;
+        font-size: 1.1rem;
+        color: var(--secondary-dark);
+    }
+
+    .upcoming-test-date {
+        font-size: 0.9rem;
+        background-color: var(--primary-light);
+        padding: 3px 8px;
+        border-radius: 8px;
+        color: var(--primary-dark);
+    }
+
+    .upcoming-test-subject {
+        font-size: 0.9rem;
+        font-style: italic;
+        margin-bottom: 8px;
+        color: var(--dark);
+    }
+
+    .upcoming-test-progress {
+        height: 12px;
+        background-color: #f0f0f0;
+        border-radius: 6px;
+        overflow: hidden;
+        margin-top: 5px;
+        position: relative;
+    }
+
+    .upcoming-test-progress-bar {
+        height: 100%;
+        background-color: var(--success);
+    }
+
+    .upcoming-test-progress-label {
+        position: absolute;
+        top: 0;
+        right: 5px;
+        font-size: 8px;
+        line-height: 12px;
+        color: var(--dark);
+        font-weight: bold;
+    }
+
+    .upcoming-test-actions {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 10px;
+    }
+
+    .upcoming-test-btn {
+        display: inline-block;
+        padding: 5px 10px;
+        background-color: var(--secondary);
+        color: white;
+        border-radius: 5px;
+        font-size: 0.8rem;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+    .upcoming-test-btn:hover {
+        background-color: var(--secondary-dark);
+        transform: translateY(-2px);
+    }
+
+    /* Tests table styling */
+    .tests-table-container {
+        overflow-x: auto;
+    }
+
+    .tests-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .tests-table th {
+        background-color: var(--secondary-light);
+        color: var(--dark);
+        padding: 10px;
+        text-align: left;
+        font-weight: bold;
+        border-bottom: 2px solid var(--secondary);
+    }
+
+    .tests-table td {
+        padding: 10px;
+        border-bottom: 1px solid #eee;
+    }
+
+    .tests-table tr:nth-child(even) {
+        background-color: rgba(255, 255, 255, 0.5);
+    }
+
+    .tests-table tr:hover {
+        background-color: rgba(126, 182, 255, 0.1);
+    }
+
+    .tests-table tr.past-test {
+        color: var(--dark);
+        background-color: rgba(245, 245, 245, 0.7);
+    }
+
+    .table-progress-container {
+        height: 10px;
+        background-color: #f0f0f0;
+        border-radius: 5px;
+        overflow: hidden;
+        position: relative;
+        width: 80%;
+    }
+
+    .table-progress-bar {
+        height: 100%;
+        background-color: var(--success);
+    }
+
+    .table-progress-label {
+        position: absolute;
+        top: 0;
+        right: 5px;
+        font-size: 8px;
+        line-height: 10px;
+        color: var(--dark);
+        font-weight: bold;
+    }
+
+    .table-action-btn {
+        display: inline-block;
+        padding: 3px 8px;
+        background-color: var(--secondary);
+        color: white;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+    .table-action-btn:hover {
+        background-color: var(--secondary-dark);
+    }
+
+    .back-button {
+        background-color: var(--secondary);
+        color: white;
+        border: 2px solid var(--dark);
+        padding: 10px 20px;
+        border-radius: 10px;
+        font-family: 'Bangers', cursive;
+        font-size: 1.1rem;
+        cursor: pointer;
+        letter-spacing: 1px;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        width: fit-content;
+        margin: 30px auto;
+        text-decoration: none;
+    }
+
+    .back-button::before {
+        content: "🏠";
+        margin-right: 8px;
+    }
+
+    .back-button:hover {
+        background-color: var(--secondary-dark);
+        transform: translateY(-3px) rotate(-2deg);
+        box-shadow: 3px 3px 0 var(--dark);
+    }
+
+    .cat-paw {
+        position: absolute;
+        bottom: -15px;
+        right: -15px;
+        font-size: 1.8rem;
+        transform: rotate(15deg);
+    }
+
+    .chart-corner {
+        position: absolute;
+        font-size: 1.5rem;
+        z-index: 1;
+    }
+
+    .chart-corner.top-left {
+        top: 5px;
+        left: 5px;
+    }
+
+    .chart-corner.top-right {
+        top: 5px;
+        right: 5px;
+    }
+
+    .chart-corner.bottom-left {
+        bottom: 5px;
+        left: 5px;
+    }
+
+    .chart-corner.bottom-right {
+        bottom: 5px;
+        right: 5px;
+    }
+
+    @media (max-width: 992px) {
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .stats-card.wide {
+            grid-column: span 1;
+        }
+
+        .summary-stats {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .metrics-container {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @media (max-width: 576px) {
+        .summary-stats {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set Chart.js defaults to match our theme
+        Chart.defaults.font.family = "'Comic Neue', cursive";
+        Chart.defaults.font.size = 14;
+        Chart.defaults.color = "#333";
+        Chart.defaults.borderColor = "rgba(106, 90, 205, 0.2)";
+
+        // Daily Progress Chart
+        {% if date_progress and date_progress|length > 0 %}
+            const dailyCtx = document.getElementById('dailyProgressChart').getContext('2d');
+            if (dailyCtx) {
+                const dailyProgressChart = new Chart(dailyCtx, {
+                    type: 'line',
+                    data: {
+                        labels: [{% for date, count in date_progress %}'{{ date }}'{% if not loop.last %}, {% endif %}{% endfor %}],
+                        datasets: [{
+                            label: 'Resources Completed',
+                            data: [{% for date, count in date_progress %}{{ count }}{% if not loop.last %}, {% endif %}{% endfor %}],
+                            backgroundColor: 'rgba(106, 90, 205, 0.2)',
+                            borderColor: 'rgba(106, 90, 205, 1)',
+                            borderWidth: 2,
+                            tension: 0.3,
+                            pointBackgroundColor: 'rgba(106, 90, 205, 1)',
+                            pointBorderColor: '#fff',
+                            pointRadius: 4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    stepSize: 1
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    maxRotation: 45,
+                                    minRotation: 45
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        }
+                    }
+                });
+            }
+        {% endif %}
+
+        // Subject Progress Chart
+        {% if subject_completion and subject_completion.values()|selectattr('total', 'gt', 0)|list|length > 0 %}
+            const subjectCtx = document.getElementById('subjectProgressChart').getContext('2d');
+            if (subjectCtx) {
+                // Create a safer data structure to avoid template errors
+                const subjectData = {
+                    labels: [],
+                    data: [],
+                    completed: [],
+                    total: []
+                };
+
+                // Build data arrays for the chart
+                {% for subject_name, data in subject_completion.items() %}
+                    {% if data.total > 0 %}
+                        subjectData.labels.push('{{ subject_name }}');
+                        subjectData.data.push({{ data.completed }});
+                        subjectData.completed.push({{ data.completed }});
+                        subjectData.total.push({{ data.total }});
+                    {% endif %}
+                {% endfor %}
+
+                if (subjectData.labels.length > 0) {
+                    const subjectProgressChart = new Chart(subjectCtx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: subjectData.labels,
+                            datasets: [{
+                                data: subjectData.data,
+                                backgroundColor: [
+                                    'rgba(255, 95, 143, 0.7)',
+                                    'rgba(106, 90, 205, 0.7)',
+                                    'rgba(102, 187, 106, 0.7)',
+                                    'rgba(255, 159, 64, 0.7)',
+                                    'rgba(123, 31, 162, 0.7)',
+                                    'rgba(0, 188, 212, 0.7)',
+                                    'rgba(255, 87, 34, 0.7)',
+                                    'rgba(76, 175, 80, 0.7)'
+                                ],
+                                borderColor: [
+                                    'rgba(255, 95, 143, 1)',
+                                    'rgba(106, 90, 205, 1)',
+                                    'rgba(102, 187, 106, 1)',
+                                    'rgba(255, 159, 64, 1)',
+                                    'rgba(123, 31, 162, 1)',
+                                    'rgba(0, 188, 212, 1)',
+                                    'rgba(255, 87, 34, 1)',
+                                    'rgba(76, 175, 80, 1)'
+                                ],
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'right',
+                                    labels: {
+                                        padding: 20,
+                                        font: {
+                                            size: 12
+                                        }
+                                    }
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            const index = context.dataIndex;
+                                            const label = context.label || '';
+                                            const value = context.raw;
+                                            const total = subjectData.total[index];
+                                            const percentage = ((value / total) * 100).toFixed(1);
+                                            return `${label}: ${value}/${total} (${percentage}%)`;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+        {% endif %}
+
+        // Score Progress Chart
+        {% if subject_performance and subject_performance.values()|selectattr('tests', 'gt', 0)|list|length > 0 %}
+            const scoreCtx = document.getElementById('scoreProgressChart').getContext('2d');
+            if (scoreCtx) {
+                // Create a safer data structure to avoid template errors
+                const perfData = {
+                    labels: [],
+                    progress: [],
+                    tests: []
+                };
+
+                // Build data arrays for the chart
+                {% for subject_name, data in subject_performance.items() %}
+                    {% if data.tests > 0 %}
+                        perfData.labels.push('{{ subject_name }}');
+                        perfData.progress.push({{ data.avg_progress }});
+                        perfData.tests.push({{ data.tests }});
+                    {% endif %}
+                {% endfor %}
+
+                if (perfData.labels.length > 0) {
+                    const scoreProgressChart = new Chart(scoreCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: perfData.labels,
+                            datasets: [{
+                                label: 'Average Progress',
+                                data: perfData.progress,
+                                backgroundColor: [
+                                    'rgba(255, 99, 132, 0.7)',
+                                    'rgba(54, 162, 235, 0.7)',
+                                    'rgba(255, 206, 86, 0.7)',
+                                    'rgba(75, 192, 192, 0.7)',
+                                    'rgba(153, 102, 255, 0.7)',
+                                    'rgba(255, 159, 64, 0.7)'
+                                ],
+                                borderColor: [
+                                    'rgba(255, 99, 132, 1)',
+                                    'rgba(54, 162, 235, 1)',
+                                    'rgba(255, 206, 86, 1)',
+                                    'rgba(75, 192, 192, 1)',
+                                    'rgba(153, 102, 255, 1)',
+                                    'rgba(255, 159, 64, 1)'
+                                ],
+                                borderWidth: 2,
+                                borderRadius: 8
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    max: 100,
+                                    ticks: {
+                                        callback: function(value) {
+                                            return value + '%';
+                                        }
+                                    }
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    display: false
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            const index = context.dataIndex;
+                                            const subject = perfData.labels[index];
+                                            const progress = context.raw.toFixed(1);
+                                            const tests = perfData.tests[index];
+                                            return `Progress: ${progress}% (${tests} tests)`;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+        {% endif %}
+    });
+</script>
+{% endblock %}

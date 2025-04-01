@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Email Dashboard 📧</h1>
+    
+    <div class="card mb-4">
+        <div class="card-body">
+            <h3>Send Custom Reminder</h3>
+            <form id="reminderForm" class="needs-validation" novalidate>
+                <div class="mb-3">
+                    <label for="recipient" class="form-label">Recipient Email</label>
+                    <input type="email" class="form-control" id="recipient" required>
+                </div>
+                <div class="mb-3">
+                    <label for="subject" class="form-label">Subject</label>
+                    <input type="text" class="form-control" id="subject" required>
+                </div>
+                <div class="mb-3">
+                    <label for="message" class="form-label">Message</label>
+                    <textarea class="form-control" id="message" rows="3" required></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Send Reminder</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <h3>Automated Emails</h3>
+            <ul class="list-group">
+                <li class="list-group-item">
+                    <h5>Test Reminders</h5>
+                    <p>Automatically sent 7, 3, and 1 day before tests</p>
+                    <a href="{{ url_for('check_upcoming_tests') }}" class="btn btn-sm btn-info">
+                        Check Upcoming Tests
+                    </a>
+                </li>
+                <li class="list-group-item">
+                    <h5>Daily Progress Reports</h5>
+                    <p>Sent when you record your first progress for the day</p>
+                </li>
+                <li class="list-group-item">
+                    <h5>Test Completion Notifications</h5>
+                    <p>Sent when you reach 100% progress on a test</p>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('reminderForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const data = {
+        recipient: document.getElementById('recipient').value,
+        subject: document.getElementById('subject').value,
+        message: document.getElementById('message').value
+    };
+
+    try {
+        const response = await fetch('/send-reminder', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        alert(result.message);
+        
+        if (result.success) {
+            e.target.reset();
+        }
+    } catch (error) {
+        alert('Error sending reminder: ' + error);
+    }
+});
+</script>
+{% endblock %}

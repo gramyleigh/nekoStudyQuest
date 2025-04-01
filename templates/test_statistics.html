@@ -1,0 +1,720 @@
+{% extends "base.html" %}
+
+{% block title %}Statistics - {{ test.name }}{% endblock %}
+
+{% block page_title %}Statistics for {{ test.name }}{% endblock %}
+
+{% block subtitle %}{{ subject_name }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{{ url_for('index') }}">Home</a>
+    <span class="separator">›</span>
+    <a href="{{ url_for('subject_details', subject_name=subject_name) }}">{{ subject_name }}</a>
+    <span class="separator">›</span>
+    <span class="current">{{ test.name }} - Statistics</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Test Info Card -->
+<div class="test-info">
+    <p><strong>Test:</strong> {{ test.name }}</p>
+    <p class="date"><strong>Date:</strong> {{ test.date }}</p>
+
+    <!-- Calculate and display statistics -->
+    {% set total_resources = namespace(count=0) %}
+    {% set completed_resources = namespace(count=0) %}
+
+    {% for topic in test.topics %}
+        {% for resource in topic.resources %}
+            {% set total_resources.count = total_resources.count + resource.count %}
+            {% set completed_resources.count = completed_resources.count + resource.completed if resource.completed is defined else completed_resources.count %}
+        {% endfor %}
+    {% endfor %}
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-title">Completion Rate</div>
+            <div class="stat-value">
+                {{ completed_resources.count }} of {{ total_resources.count }} completed
+                {% if total_resources.count > 0 %}
+                    ({{ (completed_resources.count / total_resources.count * 100)|round|int }}%)
+                {% else %}
+                    (0%)
+                {% endif %}
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-title">Total Progress</div>
+            <div class="progress-container">
+                <div class="progress-bar" style="width: {% if total_resources.count > 0 %}{{ (completed_resources.count / total_resources.count * 100)|round|int }}{% else %}0{% endif %}%"></div>
+                <span class="progress-percentage">
+                    {% if total_resources.count > 0 %}
+                        {{ (completed_resources.count / total_resources.count * 100)|round|int }}%
+                    {% else %}
+                        0%
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+    </div>
+    <div class="cat-paw">🐾</div>
+</div>
+
+<!-- Charts Section - Grid Layout -->
+<div class="dashboard-grid charts-grid">
+    <!-- Daily Progress Chart -->
+    <div class="widget chart-widget">
+        <div class="widget-header">
+            <h3 class="widget-title daily-chart">Daily Progress</h3>
+        </div>
+        <div class="widget-content">
+            {% if date_counts %}
+                <div class="chart-wrapper">
+                    <canvas id="dailyProgressChart"></canvas>
+                </div>
+            {% else %}
+                <div class="no-data">No progress data available yet. Start tracking your progress!</div>
+            {% endif %}
+        </div>
+
+    </div>
+
+    <!-- Progress by Topic Chart -->
+    <div class="widget chart-widget">
+        <div class="widget-header">
+            <h3 class="widget-title topic-chart">Progress by Topic</h3>
+        </div>
+        <div class="widget-content">
+            {% if topic_counts %}
+                <div class="chart-wrapper">
+                    <canvas id="topicProgressChart"></canvas>
+                </div>
+                <div class="stats-distribution">
+                    {% for topic_name, count in topic_counts.items() %}
+                        <div class="stats-item">
+                            <div class="stats-item-title">{{ topic_name }}</div>
+                            <div class="stats-item-value">{{ count }} resources completed</div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="no-data">No topic data available yet. Start tracking your progress!</div>
+            {% endif %}
+        </div>
+
+    </div>
+
+    <!-- Topic Completion Details -->
+    <div class="widget topic-details-widget">
+        <div class="widget-header">
+            <h3 class="widget-title topic-details">Topic Details</h3>
+        </div>
+        <div class="widget-content">
+            <div class="topic-details-wrapper">
+                {% if test.topics and test.topics|length > 0 %}
+                    <div class="topics-resources-list">
+                        {% for topic in test.topics %}
+                            <div class="topic-section">
+                                <div class="topic-name">{{ topic.name }}</div>
+                                <div class="resources-progress-list">
+                                    {% if topic.resources and topic.resources|length > 0 %}
+                                        {% for resource in topic.resources %}
+                                            <div class="resource-progress-item">
+                                                <div class="resource-info">
+                                                    <div class="resource-name-container">
+                                                        <span class="resource-name">{{ resource.name }}</span>
+                                                        {% if resource.completed is defined and resource.completed >= resource.count %}
+                                                            <span class="completion-check">✓</span>
+                                                        {% endif %}
+                                                    </div>
+                                                    <span class="resource-count">({{ resource.completed if resource.completed is defined else 0 }}/{{ resource.count }})</span>
+                                                </div>
+                                                <div class="resource-progress-bar">
+                                                    <div class="resource-progress" style="width: {{ (resource.completed / resource.count * 100) if resource.completed is defined and resource.count > 0 else 0 }}%"></div>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="no-resources">No resources for this topic.</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="no-data">No topics available yet. Add topics and resources to see details!</div>
+                {% endif %}
+            </div>
+        </div>
+        
+    </div>
+
+    <!-- Study Time Analysis -->
+    <div class="widget study-time-widget">
+        <div class="widget-header">
+            <h3 class="widget-title study-time">Study Time Distribution</h3>
+        </div>
+        <div class="widget-content">
+            <div class="study-time-wrapper">
+                {% if date_counts %}
+                    <div class="study-metrics">
+                        {% set total_completed = namespace(count=0) %}
+                        {% for date, count in date_counts %}
+                            {% set total_completed.count = total_completed.count + count %}
+                        {% endfor %}
+
+                        <div class="metric-card">
+                            <div class="metric-icon">📚</div>
+                            <div class="metric-value">{{ total_completed.count }}</div>
+                            <div class="metric-label">Resources Completed</div>
+                        </div>
+
+                        <div class="metric-card">
+                            <div class="metric-icon">⏱️</div>
+                            <div class="metric-value">{{ (total_completed.count * 0.5)|round(1) }}</div>
+                            <div class="metric-label">Study Hours (est.)</div>
+                        </div>
+
+                        <div class="metric-card">
+                            <div class="metric-icon">📆</div>
+                            <div class="metric-value">{{ date_counts|length }}</div>
+                            <div class="metric-label">Study Days</div>
+                        </div>
+
+                        <div class="metric-card">
+                            <div class="metric-icon">📈</div>
+                            <div class="metric-value">{{ (total_completed.count / date_counts|length)|round(1) if date_counts|length > 0 else 0 }}</div>
+                            <div class="metric-label">Daily Average</div>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="no-data">No study time data available yet. Start tracking your progress!</div>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+</div>
+
+
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Base styles */
+    .test-info {
+        background-color: rgba(255, 255, 255, 0.8);
+        border-radius: 15px;
+        padding: 25px;
+        margin: 30px 0;
+        box-shadow: 5px 5px 0 var(--primary-light);
+        border: 3px solid var(--primary);
+        position: relative;
+    }
+
+    .test-info p {
+        font-size: 1.3rem;
+        margin: 8px 0;
+    }
+
+    .test-info .date {
+        font-weight: bold;
+        color: var(--primary-dark);
+    }
+
+    /* Dashboard Grid Layout */
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+        margin: 30px 0;
+    }
+
+    .widget {
+        background-color: rgba(255, 255, 255, 0.8);
+        border-radius: 15px;
+        padding: 20px;
+        border: 3px solid var(--primary);
+        box-shadow: 5px 5px 0 var(--primary-light);
+        position: relative;
+        backdrop-filter: blur(5px);
+        transition: all 0.3s ease;
+        overflow: hidden;
+    }
+
+    .widget:hover {
+        transform: translateY(-3px);
+        box-shadow: 8px 8px 0 var(--primary-light);
+    }
+
+    .widget-header {
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 2px dashed var(--primary-light);
+    }
+
+    .widget-title {
+        font-family: 'Bangers', cursive;
+        color: var(--secondary);
+        font-size: 1.6rem;
+        margin: 0;
+        letter-spacing: 1px;
+        display: flex;
+        align-items: center;
+    }
+
+    .widget-title::before {
+        margin-right: 10px;
+        font-size: 1.4rem;
+    }
+
+    .widget-title.daily-chart::before {
+        content: "📅";
+    }
+
+    .widget-title.topic-chart::before {
+        content: "📊";
+    }
+
+    .widget-title.topic-details::before {
+        content: "📝";
+    }
+
+    .widget-title.study-time::before {
+        content: "⏱️";
+    }
+
+    .widget-content {
+        height: 300px;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .chart-wrapper {
+        width: 100%;
+        flex: 1;
+        min-height: 0; /* Important for flex container to allow proper sizing */
+        position: relative;
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+        margin-top: 15px;
+    }
+
+    .stat-card {
+        background-color: var(--light);
+        border-radius: 10px;
+        padding: 15px;
+        box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-title {
+        font-weight: bold;
+        color: var(--secondary);
+        margin-bottom: 10px;
+        font-size: 1.1rem;
+    }
+
+    .stat-value {
+        font-size: 1.2rem;
+        color: var(--dark);
+    }
+
+    .progress-container {
+        position: relative;
+        width: 100%;
+        height: 20px;
+        background-color: #f0f0f0;
+        border-radius: 10px;
+        overflow: hidden;
+        margin-top: 5px;
+    }
+
+    .progress-bar {
+        height: 100%;
+        background-color: var(--success);
+        transition: width 0.3s ease;
+    }
+
+    .progress-percentage {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        text-align: center;
+        line-height: 20px;
+        font-size: 0.9rem;
+        font-weight: bold;
+        color: var(--dark);
+        text-shadow: 0 0 2px rgba(255, 255, 255, 0.7);
+    }
+
+    /* Stats Distribution */
+    .stats-distribution {
+        margin-top: 15px;
+        max-height: 120px;
+        overflow-y: auto;
+        padding-right: 5px;
+    }
+
+    .stats-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 12px;
+        background-color: rgba(255, 255, 255, 0.7);
+        border-radius: 8px;
+        margin-bottom: 6px;
+    }
+
+    .stats-item-title {
+        font-weight: bold;
+    }
+
+    .stats-item-value {
+        color: var(--secondary-dark);
+    }
+
+    /* Study Metrics */
+    .study-metrics {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        grid-template-rows: repeat(2, 1fr);
+        gap: 15px;
+        height: 100%;
+        padding: 10px;
+    }
+
+    .metric-card {
+        background-color: rgba(255, 255, 255, 0.7);
+        border-radius: 12px;
+        padding: 15px;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .metric-icon {
+        font-size: 2rem;
+        margin-bottom: 5px;
+    }
+
+    .metric-value {
+        font-size: 2rem;
+        font-weight: bold;
+        color: var(--secondary-dark);
+    }
+
+    .metric-label {
+        font-size: 0.9rem;
+        color: var(--dark);
+    }
+
+    /* Topic Details */
+    .topics-resources-list {
+        max-height: 280px;
+        overflow-y: auto;
+        padding-right: 10px;
+    }
+
+    .topic-section {
+        margin-bottom: 15px;
+    }
+
+    .topic-name {
+        font-weight: bold;
+        font-size: 1.1rem;
+        color: var(--secondary);
+        padding: 5px 10px;
+        margin-bottom: 8px;
+        background-color: rgba(255, 255, 255, 0.7);
+        border-radius: 8px;
+        border-left: 4px solid var(--secondary);
+    }
+
+    .resources-progress-list {
+        margin-left: 10px;
+    }
+
+    .resource-progress-item {
+        margin-bottom: 10px;
+        background-color: rgba(255, 255, 255, 0.7);
+        border-radius: 8px;
+        padding: 10px;
+    }
+
+    .resource-info {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 5px;
+    }
+
+    .resource-name-container {
+        display: flex;
+        align-items: center;
+    }
+
+    .resource-name {
+        font-weight: bold;
+        color: var(--dark);
+    }
+
+    .completion-check {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 20px;
+        height: 20px;
+        background-color: var(--success);
+        color: white;
+        border-radius: 50%;
+        margin-left: 8px;
+        font-size: 0.8rem;
+        font-weight: bold;
+    }
+
+    .resource-count {
+        font-size: 0.9rem;
+        color: var(--dark);
+    }
+
+    .resource-progress-bar {
+        height: 10px;
+        background-color: #f0f0f0;
+        border-radius: 5px;
+        overflow: hidden;
+    }
+
+    .resource-progress {
+        height: 100%;
+        background-color: var(--success);
+        transition: width 0.3s ease;
+    }
+
+    .no-resources, .no-data {
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        font-style: italic;
+        color: var(--dark);
+        background-color: rgba(255, 255, 255, 0.5);
+        border-radius: 10px;
+        border: 1px dashed var(--primary);
+        padding: 20px;
+    }
+
+    /* Button Group */
+    .button-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: center;
+        margin-top: 30px;
+    }
+
+    .btn {
+        padding: 12px 20px;
+        border-radius: 10px;
+        font-family: 'Comic Neue', cursive;
+        font-weight: bold;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        border: 2px solid var(--dark);
+        box-shadow: 3px 3px 0 var(--dark);
+    }
+
+    .btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 5px 5px 0 var(--dark);
+    }
+
+    .btn-primary {
+        background-color: var(--secondary);
+        color: white;
+    }
+
+    .btn-secondary {
+        background-color: var(--primary);
+        color: white;
+    }
+
+    .btn-icon {
+        margin-right: 8px;
+        font-size: 1.2rem;
+    }
+
+    /* Chart Decorations */
+    .chart-corner {
+        position: absolute;
+        font-size: 1.5rem;
+        z-index: 1;
+    }
+
+    .chart-corner.top-left {
+        top: 5px;
+        left: 5px;
+    }
+
+    .chart-corner.top-right {
+        top: 5px;
+        right: 5px;
+    }
+
+    .chart-corner.bottom-left {
+        bottom: 5px;
+        left: 5px;
+    }
+
+    .chart-corner.bottom-right {
+        bottom: 5px;
+        right: 5px;
+    }
+
+    .cat-paw {
+        position: absolute;
+        bottom: -15px;
+        right: -15px;
+        font-size: 1.8rem;
+        transform: rotate(15deg);
+    }
+
+    /* Responsive Design */
+    @media (max-width: 992px) {
+        .dashboard-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .button-group {
+            flex-direction: column;
+        }
+
+        .widget-content {
+            height: 250px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // JavaScript to create charts
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set Chart.js defaults
+        Chart.defaults.font.family = "'Comic Neue', cursive";
+        Chart.defaults.font.size = 14;
+        Chart.defaults.color = "#333";
+        Chart.defaults.borderColor = "rgba(106, 90, 205, 0.2)";
+
+        {% if date_counts %}
+            // Daily progress chart
+            const dailyProgressCtx = document.getElementById('dailyProgressChart').getContext('2d');
+            const dailyProgressChart = new Chart(dailyProgressCtx, {
+                type: 'bar',
+                data: {
+                    labels: [{% for date, count in date_counts %}'{{ date }}'{% if not loop.last %}, {% endif %}{% endfor %}],
+                    datasets: [{
+                        label: 'Resources Completed',
+                        data: [{% for date, count in date_counts %}{{ count }}{% if not loop.last %}, {% endif %}{% endfor %}],
+                        backgroundColor: 'rgba(106, 90, 205, 0.7)',
+                        borderColor: 'rgba(106, 90, 205, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        {% endif %}
+
+        {% if topic_counts %}
+            // Topic progress chart
+            const topicProgressCtx = document.getElementById('topicProgressChart').getContext('2d');
+            const topicProgressChart = new Chart(topicProgressCtx, {
+                type: 'pie',
+                data: {
+                    labels: [{% for topic_name, count in topic_counts.items() %}'{{ topic_name }}'{% if not loop.last %}, {% endif %}{% endfor %}],
+                    datasets: [{
+                        data: [{% for topic_name, count in topic_counts.items() %}{{ count }}{% if not loop.last %}, {% endif %}{% endfor %}],
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.7)',
+                            'rgba(54, 162, 235, 0.7)',
+                            'rgba(255, 206, 86, 0.7)',
+                            'rgba(75, 192, 192, 0.7)',
+                            'rgba(153, 102, 255, 0.7)',
+                            'rgba(255, 159, 64, 0.7)',
+                            'rgba(255, 99, 132, 0.7)',
+                            'rgba(54, 162, 235, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(255, 99, 132, 1)',
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(255, 206, 86, 1)',
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(153, 102, 255, 1)',
+                            'rgba(255, 159, 64, 1)',
+                            'rgba(255, 99, 132, 1)',
+                            'rgba(54, 162, 235, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                font: {
+                                    family: "'Comic Neue', cursive",
+                                    size: 12
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        {% endif %}
+    });
+</script>
+{% endblock %}

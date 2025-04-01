@@ -1,0 +1,176 @@
+/* Chart and statistics styling */
+.charts-section {
+    margin: 40px 0;
+    position: relative;
+}
+
+.charts-title {
+    font-family: 'Bangers', cursive;
+    color: var(--secondary);
+    font-size: 2.5rem;
+    letter-spacing: 2px;
+    text-shadow: 2px 2px 0 var(--dark);
+    text-align: center;
+    margin-bottom: 30px;
+    -webkit-text-stroke: 1px var(--dark);
+    position: relative;
+}
+
+.charts-title::before, .charts-title::after {
+    content: "📊";
+    position: absolute;
+    top: 5px;
+    font-size: 1.8rem;
+}
+
+.charts-title::before {
+    left: -40px;
+    transform: rotate(-10deg);
+}
+
+.charts-title::after {
+    right: -40px;
+    transform: rotate(10deg);
+}
+
+.chart-container {
+    background-color: rgba(255, 255, 255, 0.8);
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 30px;
+    border: 3px solid var(--dark);
+    box-shadow: 5px 5px 0 var(--dark);
+    position: relative;
+    transition: all 0.3s ease;
+    overflow: hidden;
+    backdrop-filter: blur(5px);
+}
+
+.chart-container:hover {
+    transform: translateY(-5px);
+    box-shadow: 8px 8px 0 var(--dark);
+}
+
+.chart-container::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(107, 88, 205, 0.1) 0%, transparent 100%);
+    z-index: 1;
+}
+
+.chart-title {
+    font-family: 'Architects Daughter', cursive;
+    color: var(--primary-dark);
+    font-size: 1.8rem;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px dashed var(--primary-light);
+    position: relative;
+    z-index: 2;
+}
+
+.chart-wrapper {
+    position: relative;
+    height: 350px;
+    margin: 20px 0;
+    z-index: 2;
+}
+
+/* Stats distribution items */
+.stats-distribution {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.stats-item {
+    background-color: rgba(245, 245, 245, 0.9);
+    border-radius: 10px;
+    padding: 15px;
+    flex: 1;
+    min-width: 200px;
+    border-left: 5px solid var(--secondary);
+    transition: all 0.3s ease;
+}
+
+.stats-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 3px 3px 0 rgba(107, 88, 205, 0.3);
+}
+
+.stats-item-title {
+    font-weight: bold;
+    font-size: 1.2rem;
+    color: var(--secondary);
+    font-family: 'Architects Daughter', cursive;
+}
+
+.stats-item-value {
+    margin-top: 5px;
+    font-size: 1.1rem;
+}
+
+/* No data message */
+.no-data {
+    text-align: center;
+    padding: 40px;
+    color: var(--dark);
+    font-style: italic;
+    font-size: 1.2rem;
+    font-family: 'Crafty Girls', cursive;
+}
+
+.no-data::after {
+    content: "😿";
+    display: block;
+    font-size: 3rem;
+    margin-top: 15px;
+}
+
+/* Corner decorations for chart containers */
+.chart-corner {
+    position: absolute;
+    font-size: 1.5rem;
+    z-index: 2;
+}
+
+.chart-corner.top-left {
+    top: 5px;
+    left: 5px;
+}
+
+.chart-corner.top-right {
+    top: 5px;
+    right: 5px;
+}
+
+.chart-corner.bottom-left {
+    bottom: 5px;
+    left: 5px;
+}
+
+.chart-corner.bottom-right {
+    bottom: 5px;
+    right: 5px;
+}
+
+/* Responsive styles for charts */
+@media (max-width: 768px) {
+    .chart-wrapper {
+        height: 250px;
+    }
+
+    .stats-item {
+        min-width: 100%;
+    }
+
+    .charts-title::before,
+    .charts-title::after {
+        display: none;
+    }
+}
