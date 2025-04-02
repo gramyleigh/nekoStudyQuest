@@ -8,6 +8,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@400;700&family=Luckiest+Guy&family=Indie+Flower&family=Architects+Daughter&family=Crafty+Girls&display=swap" rel="stylesheet">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <!-- Inline the most important base styles to avoid dependency issues -->
     <style>
         :root {
@@ -85,13 +87,58 @@
             font-weight: bold;
         }
 
+        /* Navigation menu styling */
+        .main-nav {
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
 
+        .nav-list {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
 
+        .nav-item {
+            display: inline-block;
+        }
 
+        .nav-link {
+            display: inline-flex;
+            align-items: center;
+            padding: 8px 15px;
+            background-color: var(--widget-bg);
+            border-radius: 30px;
+            text-decoration: none;
+            color: var(--dark);
+            font-weight: bold;
+            transition: all 0.3s ease;
+            border: 2px solid var(--primary);
+            box-shadow: 2px 2px 0 var(--dark);
+        }
 
+        .nav-link i {
+            margin-right: 6px;
+        }
 
+        .nav-link:hover {
+            background-color: var(--primary-light);
+            transform: translateY(-2px);
+            box-shadow: 3px 3px 0 var(--dark);
+        }
 
+        .nav-item-debug .nav-link {
+            border-color: var(--danger);
+            background-color: var(--widget-bg);
+        }
 
+        .nav-item-debug .nav-link:hover {
+            background-color: var(--danger);
+        }
 
         /* Breadcrumb navigation */
         .breadcrumbs {
@@ -288,6 +335,18 @@
                 <h1>{% block page_title %}Neko Study Quest!{% endblock %}</h1>
             </div>
             <div class="subtitle">{% block subtitle %}Your Cat Manga-Style Study Dashboard{% endblock %}</div>
+            
+            <!-- Navigation Menu -->
+            <nav class="main-nav">
+                <ul class="nav-list">
+                    <li class="nav-item"><a href="{{ url_for('index') }}" class="nav-link"><i class="fas fa-home"></i> Home</a></li>
+                    <li class="nav-item"><a href="{{ url_for('all_statistics') }}" class="nav-link"><i class="fas fa-chart-bar"></i> Statistics</a></li>
+                    <li class="nav-item"><a href="{{ url_for('past_tests') }}" class="nav-link"><i class="fas fa-history"></i> Past Tests</a></li>
+                    <li class="nav-item"><a href="{{ url_for('edit_subjects') }}" class="nav-link"><i class="fas fa-edit"></i> Edit Subjects</a></li>
+                    <li class="nav-item nav-item-debug"><a href="{{ url_for('email_config') }}" class="nav-link"><i class="fas fa-envelope"></i> Email Config</a></li>
+                    <li class="nav-item nav-item-debug"><a href="{{ url_for('email_test_page') }}" class="nav-link"><i class="fas fa-paper-plane"></i> Test Emails</a></li>
+                </ul>
+            </nav>
         </header>
         {% endblock %}
 

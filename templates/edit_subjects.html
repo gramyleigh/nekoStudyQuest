@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Subjects{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Edit Subjects</h1>
+    <p class="page-subtitle">Add, edit, or remove your study subjects</p>
+</div>
+
+<div class="widget edit-subjects-widget">
+    <div class="widget-header">
+        <h2 class="widget-title">
+            <i class="fas fa-graduation-cap"></i>
+            Your Subjects
+        </h2>
+    </div>
+    
+    <div class="card mb-4">
+        <div class="card-body">
+            <h3 class="card-title">Current Subjects</h3>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Subject Name</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="subjectsTable">
+                    {% for subject in subjects %}
+                    <tr>
+                        <td>{{ subject }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-primary edit-subject-btn" data-subject="{{ subject }}">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
+                            <button class="btn btn-sm btn-danger delete-subject-btn" data-subject="{{ subject }}">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-body">
+            <h3 class="card-title">Add New Subject</h3>
+            <form id="addSubjectForm" method="POST" action="{{ url_for('add_subject') }}">
+                <div class="form-group">
+                    <label for="newSubjectName">Subject Name</label>
+                    <input type="text" class="form-control" id="newSubjectName" name="subject_name" required placeholder="Enter subject name">
+                </div>
+                <button type="submit" class="btn btn-primary mt-3">
+                    <i class="fas fa-plus"></i> Add Subject
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Subject Modal -->
+<div class="modal fade" id="editSubjectModal" tabindex="-1" role="dialog" aria-labelledby="editSubjectModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editSubjectModalLabel">Edit Subject</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="editSubjectForm" method="POST" action="{{ url_for('update_subject') }}">
+                    <input type="hidden" id="originalSubjectName" name="original_subject_name">
+                    <div class="form-group">
+                        <label for="editedSubjectName">Subject Name</label>
+                        <input type="text" class="form-control" id="editedSubjectName" name="new_subject_name" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveSubjectChanges">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirm Delete Modal -->
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1" role="dialog" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmDeleteModalLabel">Confirm Delete</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete <span id="subjectToDelete"></span>?</p>
+                <p class="text-danger">This will also delete all tests and progress data for this subject!</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <form id="deleteSubjectForm" method="POST" action="{{ url_for('delete_subject') }}">
+                    <input type="hidden" id="deleteSubjectName" name="subject_name">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function() {
+        // Edit subject button click
+        $('.edit-subject-btn').click(function() {
+            var subject = $(this).data('subject');
+            $('#originalSubjectName').val(subject);
+            $('#editedSubjectName').val(subject);
+            $('#editSubjectModal').modal('show');
+        });
+        
+        // Save subject changes
+        $('#saveSubjectChanges').click(function() {
+            $('#editSubjectForm').submit();
+        });
+        
+        // Delete subject button click
+        $('.delete-subject-btn').click(function() {
+            var subject = $(this).data('subject');
+            $('#subjectToDelete').text(subject);
+            $('#deleteSubjectName').val(subject);
+            $('#confirmDeleteModal').modal('show');
+        });
+    });
+</script>
+{% endblock %} 

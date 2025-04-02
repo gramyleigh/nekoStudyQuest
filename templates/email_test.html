@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+
+{% block title %}Email Test{% endblock %}
+
+{% block page_title %}Email Testing{% endblock %}
+{% block subtitle %}Test your email configuration{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h1 class="h4 mb-0">Email Test</h1>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <p><i class="fas fa-info-circle"></i> This page allows you to test different email notification types.</p>
+                        <p>All emails will be sent to: <strong>{{ config.MAIL_USERNAME }}</strong></p>
+                    </div>
+                    
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-header bg-success text-white">
+                                    <h5 class="mb-0">Test Reminder Email</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p>Send a reminder email for an upcoming test</p>
+                                    <form action="{{ url_for('send_test_reminder_sample') }}" method="post">
+                                        <div class="mb-3">
+                                            <label for="subject_name" class="form-label">Subject Name</label>
+                                            <input type="text" class="form-control" id="subject_name" name="subject_name" value="Sample Subject" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="test_name" class="form-label">Test Name</label>
+                                            <input type="text" class="form-control" id="test_name" name="test_name" value="Sample Test" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="test_date" class="form-label">Test Date</label>
+                                            <input type="date" class="form-control" id="test_date" name="test_date" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="progress" class="form-label">Progress (%)</label>
+                                            <input type="number" class="form-control" id="progress" name="progress" min="0" max="100" value="50" required>
+                                        </div>
+                                        <button type="submit" class="btn btn-success">Send Test Reminder</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-header bg-info text-white">
+                                    <h5 class="mb-0">Daily Progress Email</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p>Send a daily progress summary email</p>
+                                    <form action="{{ url_for('send_daily_progress_sample') }}" method="post">
+                                        <div class="mb-3">
+                                            <label for="dp_subject_name" class="form-label">Subject Name</label>
+                                            <input type="text" class="form-control" id="dp_subject_name" name="subject_name" value="Sample Subject" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="dp_test_name" class="form-label">Test Name</label>
+                                            <input type="text" class="form-control" id="dp_test_name" name="test_name" value="Sample Test" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="dp_resources" class="form-label">Resources Completed (number)</label>
+                                            <input type="number" class="form-control" id="dp_resources" name="resources" min="1" max="10" value="3" required>
+                                        </div>
+                                        <button type="submit" class="btn btn-info">Send Progress Email</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-header bg-warning text-dark">
+                                    <h5 class="mb-0">Test Complete Email</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p>Send a test completion email</p>
+                                    <form action="{{ url_for('send_test_complete_sample') }}" method="post">
+                                        <div class="mb-3">
+                                            <label for="tc_subject_name" class="form-label">Subject Name</label>
+                                            <input type="text" class="form-control" id="tc_subject_name" name="subject_name" value="Sample Subject" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="tc_test_name" class="form-label">Test Name</label>
+                                            <input type="text" class="form-control" id="tc_test_name" name="test_name" value="Sample Test" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="tc_progress" class="form-label">Progress (%)</label>
+                                            <input type="number" class="form-control" id="tc_progress" name="progress" min="0" max="100" value="100" required>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="tc_completed" class="form-label">Resources Completed</label>
+                                                    <input type="number" class="form-control" id="tc_completed" name="completed" min="1" value="10" required>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="tc_total" class="form-label">Total Resources</label>
+                                                    <input type="number" class="form-control" id="tc_total" name="total" min="1" value="10" required>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button type="submit" class="btn btn-warning">Send Completion Email</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-header bg-danger text-white">
+                                    <h5 class="mb-0">Custom Email</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p>Send a custom email</p>
+                                    <form action="{{ url_for('send_custom_email') }}" method="post">
+                                        <div class="mb-3">
+                                            <label for="email_subject" class="form-label">Email Subject</label>
+                                            <input type="text" class="form-control" id="email_subject" name="subject" value="Custom Message" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="email_body" class="form-label">Email Body</label>
+                                            <textarea class="form-control" id="email_body" name="body" rows="4" required>This is a custom email message from Neko Study Quest.</textarea>
+                                        </div>
+                                        <button type="submit" class="btn btn-danger">Send Custom Email</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a href="{{ url_for('email_config') }}" class="btn btn-secondary me-2">
+                        <i class="fas fa-cog"></i> Email Configuration
+                    </a>
+                    <a href="{{ url_for('index') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Home
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

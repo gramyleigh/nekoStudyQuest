@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+
+{% block title %}Email Configuration{% endblock %}
+
+{% block content %}
+{# Initialize variables to prevent errors with null values #}
+{% set email_settings = email_settings|default({}) %}
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h1 class="h4 mb-0">Email Configuration</h1>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle"></i> Using <strong>Mailtrap</strong> for email testing.
+                    </div>
+                    
+                    <h5 class="mt-4">Configuration Details:</h5>
+                    <table class="table table-striped">
+                        <tbody>
+                            <tr>
+                                <th>MAIL_SERVER</th>
+                                <td>sandbox.smtp.mailtrap.io</td>
+                            </tr>
+                            <tr>
+                                <th>MAIL_PORT</th>
+                                <td>2525</td>
+                            </tr>
+                            <tr>
+                                <th>MAIL_USE_TLS</th>
+                                <td>True</td>
+                            </tr>
+                            <tr>
+                                <th>MAIL_USERNAME</th>
+                                <td>8a16965a27f789</td>
+                            </tr>
+                            <tr>
+                                <th>MAIL_PASSWORD</th>
+                                <td>******* (Mailtrap test credentials)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <div class="alert alert-info mt-4">
+                        <h5 class="alert-heading"><i class="fas fa-info-circle"></i> About Mailtrap</h5>
+                        <p>Mailtrap is a testing tool that lets developers check email functionality without sending actual emails to recipients.</p>
+                        <hr>
+                        <p>To access the test inbox and view all sent emails:</p>
+                        <ol>
+                            <li>Visit <a href="https://mailtrap.io/inboxes" target="_blank">Mailtrap.io</a></li>
+                            <li>Sign in with these credentials:
+                                <ul>
+                                    <li><strong>Email:</strong> test@nekostudyquest.app</li>
+                                    <li><strong>Password:</strong> NekoTest123</li>
+                                </ul>
+                            </li>
+                            <li>Click on the "Inboxes" section to see all test emails</li>
+                        </ol>
+                    </div>
+                    
+                    <h5 class="mt-4">Test Email Functionality:</h5>
+                    <p>Use one of the options below to test if your email configuration is working:</p>
+                    
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="{{ url_for('email_test_page') }}" class="btn btn-primary">
+                            <i class="fas fa-envelope"></i> Go to Email Test Page
+                        </a>
+                        
+                        <a href="{{ url_for('check_upcoming_tests') }}" class="btn btn-info">
+                            <i class="fas fa-bell"></i> Test Upcoming Test Reminders
+                        </a>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <h5>Troubleshooting:</h5>
+                        <div class="alert alert-danger">
+                            <strong>Error detected:</strong> Username and Password not accepted by Gmail. This is a common security issue.
+                        </div>
+                        <ul class="list-group">
+                            <li class="list-group-item">
+                                <strong>Gmail Security Settings:</strong> There are three methods to fix this issue:
+                                <div class="mt-2">
+                                    <h6>Option 1: Enable "Less secure app access" (Less recommended)</h6>
+                                    <ol>
+                                        <li>Go to your <a href="https://myaccount.google.com/security" target="_blank">Google Account Security settings</a></li>
+                                        <li>Scroll to "Less secure app access" (or search for it)</li>
+                                        <li>Turn on "Allow less secure apps"</li>
+                                        <li>Note: Google may have removed this option for some accounts</li>
+                                    </ol>
+                                </div>
+                                <div class="mt-2">
+                                    <h6>Option 2: Use App Password (Recommended for accounts with 2FA)</h6>
+                                    <ol>
+                                        <li>Go to your <a href="https://myaccount.google.com/apppasswords" target="_blank">Google Account App Passwords</a></li>
+                                        <li>Select "Mail" as the app and "Other" as the device (name it "Flask App")</li>
+                                        <li>Generate the password</li>
+                                        <li>Copy the generated 16-character password</li>
+                                        <li>Update your .env file with this password instead of your regular Gmail password</li>
+                                    </ol>
+                                </div>
+                                <div class="mt-2">
+                                    <h6>Option 3: Enable "Less secure app access" specifically for your account</h6>
+                                    <ol>
+                                        <li>Go to <a href="https://accounts.google.com/DisplayUnlockCaptcha" target="_blank">Display Unlock Captcha</a></li>
+                                        <li>Sign in and click "Continue"</li>
+                                        <li>Then try sending the email again immediately</li>
+                                    </ol>
+                                </div>
+                            </li>
+                            <li class="list-group-item">
+                                <strong>Check .env File:</strong> Make sure your .env file contains the correct credentials:
+                                <pre>MAIL_USERNAME=your-email@gmail.com
+MAIL_PASSWORD=your-password</pre>
+                                <div class="alert alert-warning">
+                                    <strong>Note:</strong> If using an App Password, replace your regular password with the 16-character App Password.
+                                </div>
+                            </li>
+                            <li class="list-group-item">
+                                <strong>Double-check for typos:</strong> Make sure your email address and password are spelled correctly with no extra spaces.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a href="{{ url_for('index') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Home
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

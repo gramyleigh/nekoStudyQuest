@@ -7,20 +7,11 @@ import re
 import uuid
 from flask_mail import Mail, Message
 from dotenv import load_dotenv
+from models.topic import Topic
+from models.resource import Resource
+from models.test import Test
 
 load_dotenv()
-
-app = Flask(__name__, static_folder='static')
-app.secret_key = 'your_secret_key'  # Required for session
-
-# Email configuration
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'  # Or another SMTP server
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
-app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
-app.config['MAIL_DEFAULT_SENDER'] = 'your-email@gmail.com'  # Replace with your email
-mail = Mail(app)
 
 # Configuration
 SUBJECTS_FILE = 'subjects_data.json'
@@ -31,11 +22,46 @@ PROGRESS_DIR = 'progress_records'
 # Default subjects to use if file doesn't exist
 DEFAULT_SUBJECTS = ['Math', 'Science', 'History', 'English']
 
-# Ensure the directories exist
-for directory in [DETAILS_DIR, STATIC_DIR, PROGRESS_DIR]:
-    if not os.path.exists(directory):
-        os.makedirs(directory)
+def ensure_file_structure():
+    """Ensure all required directories exist and create them if they don't"""
+    # Required directories
+    dirs = [
+        DETAILS_DIR,     # subject_details
+        STATIC_DIR,      # static
+        PROGRESS_DIR,    # progress_records
+    ]
+    
+    # Create directories if they don't exist
+    for directory in dirs:
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+            print(f"Created directory: {directory}")
+    
+    # Check if subjects file exists, create it if not
+    if not os.path.exists(SUBJECTS_FILE):
+        save_subjects(DEFAULT_SUBJECTS)
+        print(f"Created subjects file with default subjects: {SUBJECTS_FILE}")
+        
+        # Also create empty subject details files for each default subject
+        for subject in DEFAULT_SUBJECTS:
+            if not os.path.exists(get_subject_details_file(subject)):
+                save_subject_details(subject, {"resources": [], "tests": [], "study_materials": []})
+                print(f"Created empty details file for subject: {subject}")
+    
+    return True
 
+# Initialize the app
+app = Flask(__name__, static_folder='static')
+app.secret_key = 'your_secret_key'  # Required for session
+
+# Email configuration
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'  # Or another SMTP server
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
+app.config['MAIL_DEFAULT_SENDER'] = 'gramyleigh@gmail.com'  # Replace with your email
+mail = Mail(app)
 
 # ===== Email Functions =====
 
@@ -159,6 +185,58 @@ def send_test_complete_email(subject_name, test_name, progress, completed_resour
     mail.send(msg)
 
     flash(f"Test completion email sent for {test_name}!", "success")
+
+
+def send_upcoming_tests_summary_email(upcoming_tests):
+    """Send a summary email for all upcoming tests"""
+    if not upcoming_tests:
+        flash("No upcoming tests to send reminders for!", "warning")
+        return False
+    
+    recipient = app.config['MAIL_USERNAME']  # Send to yourself
+    
+    subject = f"📚 Upcoming Tests Summary - Next {len(upcoming_tests)} Tests"
+    
+    # Sort tests by date
+    sorted_tests = sorted(upcoming_tests, key=lambda x: datetime.strptime(x['date'], '%Y-%m-%d'))
+    
+    body = f"""
+    <html>
+    <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #f9f9f9;">
+        <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 20px; border-radius: 10px; border-top: 5px solid #6b58cd; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);">
+            <h1 style="color: #6b58cd;">Upcoming Tests Summary</h1>
+            <p>Hello! Here's a summary of your upcoming tests:</p>
+            
+            {''.join([f'''
+            <div style="background-color: #f0f0f0; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                <h2 style="margin-top: 0; color: #ff5f8f;">{test['name']}</h2>
+                <p><strong>Subject:</strong> {test['subject_name']}</p>
+                <p><strong>Date:</strong> {test['date']}</p>
+                
+                <div style="background-color: #eee; border-radius: 10px; height: 20px; overflow: hidden; margin: 10px 0;">
+                    <div style="background-color: #66bb6a; height: 100%; width: {test['progress']}%; text-align: center; color: white; line-height: 20px; font-size: 12px;">
+                        {test['progress']}%
+                    </div>
+                </div>
+                <p><strong>Current Progress:</strong> {test['progress']}%</p>
+            </div>
+            ''' for test in sorted_tests])}
+            
+            <p>Keep up the good work with your studies!</p>
+            <p>Meow~ 🐱</p>
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #999;">
+                <p>This is an automated message from your Neko Study Quest app.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    msg = Message(subject=subject, recipients=[recipient], html=body)
+    mail.send(msg)
+    
+    flash(f"Summary email sent for {len(upcoming_tests)} upcoming tests!", "success")
+    return True
 
 
 # ===== Data Model Functions =====
@@ -1045,35 +1123,61 @@ def test_statistics(subject_name, test_id):
 def edit_subjects():
     """Edit subjects"""
     subjects = load_subjects()
-    return render_template('edit_subjects.html', subjects=subjects)
+    
+    # Get the count of tests and resources for each subject
+    subject_stats = {}
+    for subject_name in subjects:
+        subject_data = load_subject_details(subject_name)
+        
+        # Count tests
+        test_count = len(subject_data.get('tests', []))
+        
+        # Count resources across all tests
+        resource_count = 0
+        for test in subject_data.get('tests', []):
+            if isinstance(test, dict) and 'topics' in test:
+                for topic in test.get('topics', []):
+                    if isinstance(topic, dict) and 'resources' in topic:
+                        resource_count += len(topic.get('resources', []))
+        
+        subject_stats[subject_name] = {
+            'tests': test_count,
+            'resources': resource_count
+        }
+    
+    return render_template('edit_subjects.html', subjects=subjects, subject_stats=subject_stats)
 
 
 @app.route('/add-subject', methods=['POST'])
 def add_subject():
     """Add a new subject"""
     subject_name = request.form.get('subject_name', '').strip()
-
-    if subject_name:
-        # Load existing subjects
-        subjects = load_subjects()
-
-        # Check if subject already exists
-        if subject_name in subjects:
-            flash(f'Subject "{subject_name}" already exists!', 'error')
-        else:
-            # Add new subject
-            subjects.append(subject_name)
-
-            # Save updated subjects
-            save_subjects(subjects)
-
-            # Create empty details file
-            save_subject_details(subject_name, {"resources": [], "tests": [], "study_materials": []})
-
-            flash(f'Subject "{subject_name}" added successfully!', 'success')
+    
+    # Validate subject name
+    validated_name, error = validate_subject_name(subject_name)
+    
+    if error:
+        flash(f"Error: {error}", "error")
+        return redirect(url_for('edit_subjects'))
+    
+    # Load existing subjects
+    subjects = load_subjects()
+    
+    # Check if subject already exists
+    if validated_name in subjects:
+        flash(f'Subject "{validated_name}" already exists!', 'error')
     else:
-        flash('Please enter a valid subject name!', 'error')
-
+        # Add new subject
+        subjects.append(validated_name)
+        
+        # Save updated subjects
+        save_subjects(subjects)
+        
+        # Create empty details file
+        save_subject_details(validated_name, {"resources": [], "tests": [], "study_materials": []})
+        
+        flash(f'Subject "{validated_name}" added successfully!', 'success')
+    
     return redirect(url_for('edit_subjects'))
 
 
@@ -1602,5 +1706,223 @@ def add_topic_resource(subject_name, test_id, topic_id):
     return redirect(url_for('edit_test_topics', subject_name=subject_name, test_id=test_id))
 
 
+@app.route('/email-config')
+def email_config():
+    """Show email configuration page"""
+    email_settings = {
+        'server': app.config['MAIL_SERVER'],
+        'port': app.config['MAIL_PORT'],
+        'use_tls': app.config['MAIL_USE_TLS'],
+        'username': app.config['MAIL_USERNAME'],
+        'sender': app.config['MAIL_DEFAULT_SENDER']
+    }
+    return render_template('email_config.html', email_settings=email_settings)
+
+@app.route('/email-test')
+def email_test_page():
+    """Show email test page"""
+    return render_template('email_test.html')
+
+@app.route('/email-dashboard')
+def email_dashboard():
+    """Show email dashboard with all email notification options"""
+    # Get upcoming tests for potential reminders
+    upcoming_tests = get_upcoming_tests(days=14)
+    
+    # Get subjects for sending emails about specific subjects
+    subjects = load_subjects()
+    
+    # For each subject, get the active tests
+    subject_tests = {}
+    for subject_name in subjects:
+        subject_data = load_subject_details(subject_name)
+        active_tests = []
+        
+        for test in subject_data.get('tests', []):
+            if isinstance(test, dict) and 'id' in test and 'date' in test:
+                if not is_past_test(test['date']):
+                    test['progress'] = calculate_progress(test, subject_name)
+                    active_tests.append(test)
+        
+        if active_tests:
+            subject_tests[subject_name] = active_tests
+    
+    return render_template('email_dashboard.html', 
+                          upcoming_tests=upcoming_tests,
+                          subjects=subjects,
+                          subject_tests=subject_tests)
+
+@app.route('/send-upcoming-summary', methods=['POST'])
+def send_upcoming_summary():
+    """Send a summary email for all upcoming tests"""
+    days = int(request.form.get('days', 7))
+    upcoming_tests = get_upcoming_tests(days=days)
+    
+    if upcoming_tests:
+        send_upcoming_tests_summary_email(upcoming_tests)
+    else:
+        flash(f"No upcoming tests in the next {days} days!", "warning")
+    
+    # Redirect back to email dashboard
+    return redirect(url_for('email_dashboard'))
+
+def validate_subject_name(subject_name):
+    """Validate and clean a subject name for storage"""
+    # Trim whitespace
+    cleaned_name = subject_name.strip()
+    
+    # Check if the name is empty after cleaning
+    if not cleaned_name:
+        return None, "Subject name cannot be empty"
+    
+    # Check if the name is too long
+    if len(cleaned_name) > 50:
+        return None, "Subject name is too long (max 50 characters)"
+    
+    # Check for invalid characters that might cause file system issues
+    invalid_chars = ['/', '\\', ':', '*', '?', '"', '<', '>', '|']
+    for char in invalid_chars:
+        if char in cleaned_name:
+            return None, f"Subject name contains invalid character: {char}"
+    
+    return cleaned_name, None
+
+def ensure_file_structure():
+    """Ensure all required directories exist and create them if they don't"""
+    # Required directories
+    dirs = [
+        DETAILS_DIR,     # subject_details
+        STATIC_DIR,      # static
+        PROGRESS_DIR,    # progress_records
+    ]
+    
+    # Create directories if they don't exist
+    for directory in dirs:
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+            print(f"Created directory: {directory}")
+    
+    # Check if subjects file exists, create it if not
+    if not os.path.exists(SUBJECTS_FILE):
+        save_subjects(DEFAULT_SUBJECTS)
+        print(f"Created subjects file with default subjects: {SUBJECTS_FILE}")
+        
+        # Also create empty subject details files for each default subject
+        for subject in DEFAULT_SUBJECTS:
+            if not os.path.exists(get_subject_details_file(subject)):
+                save_subject_details(subject, {"resources": [], "tests": [], "study_materials": []})
+                print(f"Created empty details file for subject: {subject}")
+    
+    return True
+
+@app.route('/send-test-reminder-sample', methods=['POST'])
+def send_test_reminder_sample():
+    """Send a sample test reminder email"""
+    subject_name = request.form.get('subject_name')
+    test_name = request.form.get('test_name')
+    test_date = request.form.get('test_date')
+    progress = float(request.form.get('progress', 50))
+    
+    # Send reminder email
+    send_test_reminder_email(subject_name, test_name, test_date, progress)
+    
+    flash('Test reminder email sent successfully!', 'success')
+    return redirect(url_for('email_test_page'))
+
+@app.route('/send-daily-progress-sample', methods=['POST'])
+def send_daily_progress_sample():
+    """Send a sample daily progress email"""
+    subject_name = request.form.get('subject_name')
+    test_name = request.form.get('test_name')
+    resources_count = int(request.form.get('resources', 3))
+    
+    # Create sample resources
+    resources = []
+    for i in range(resources_count):
+        resources.append({
+            'topic_name': f'Sample Topic {i+1}',
+            'resource_name': f'Sample Resource {i+1}'
+        })
+    
+    # Send progress email
+    send_daily_progress_email(subject_name, test_name, resources)
+    
+    flash('Daily progress email sent successfully!', 'success')
+    return redirect(url_for('email_test_page'))
+
+@app.route('/send-test-complete-sample', methods=['POST'])
+def send_test_complete_sample():
+    """Send a sample test completion email"""
+    subject_name = request.form.get('subject_name')
+    test_name = request.form.get('test_name')
+    progress = float(request.form.get('progress', 100))
+    completed = int(request.form.get('completed', 10))
+    total = int(request.form.get('total', 10))
+    
+    # Send completion email
+    send_test_complete_email(subject_name, test_name, progress, completed, total)
+    
+    flash('Test completion email sent successfully!', 'success')
+    return redirect(url_for('email_test_page'))
+
+@app.route('/send-custom-email', methods=['POST'])
+def send_custom_email():
+    """Send a custom email"""
+    subject = request.form.get('subject')
+    body = request.form.get('body')
+    recipient = app.config['MAIL_USERNAME']  # Send to yourself
+    
+    msg = Message(subject=subject, recipients=[recipient], html=f"<html><body>{body}</body></html>")
+    mail.send(msg)
+    
+    flash('Custom email sent successfully!', 'success')
+    return redirect(url_for('email_test_page'))
+
+@app.route('/send-test-reminder-email-choice', methods=['POST'])
+def send_test_reminder_email_choice():
+    """Send a test reminder email for a selected test"""
+    test_choice = request.form.get('test_choice', '')
+    
+    # Split the value (format: "subject_name|test_id")
+    if '|' in test_choice:
+        subject_name, test_id = test_choice.split('|', 1)
+        
+        # Load subject details
+        subject_data = load_subject_details(subject_name)
+        
+        # Find the test
+        test = next((t for t in subject_data.get('tests', []) 
+                     if isinstance(t, dict) and t.get('id') == test_id), None)
+        
+        if test:
+            # Calculate progress
+            progress = calculate_progress(test, subject_name)
+            
+            # Send reminder email
+            send_test_reminder_email(subject_name, test['name'], test['date'], progress)
+            
+            flash(f"Reminder email sent for {test['name']}!", "success")
+            return redirect(url_for('email_dashboard'))
+    
+    flash("Invalid test selection or test not found!", "error")
+    return redirect(url_for('email_dashboard'))
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    try:
+        print("Starting Neko Study Quest...")
+        print(f"Ensuring file structure... {'Success' if ensure_file_structure() else 'Failed'}")
+        
+        # Check if email configuration is valid
+        if not app.config['MAIL_USERNAME'] or not app.config['MAIL_PASSWORD']:
+            print("WARNING: Email configuration is incomplete or invalid.")
+            print("Some features may not work properly.")
+            print("Please check your .env file and ensure MAIL_USERNAME and MAIL_PASSWORD are set correctly.")
+        else:
+            print(f"Email configured for: {app.config['MAIL_USERNAME']}")
+        
+        print("Starting server...")
+        app.run(debug=True)
+    except Exception as e:
+        print(f"Error starting application: {str(e)}")
+        import traceback
+        traceback.print_exc()

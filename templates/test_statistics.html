@@ -17,6 +17,10 @@
 {% endblock %}
 
 {% block content %}
+{# Initialize variables to prevent errors with null values #}
+{% set test = test|default({}) %}
+{% set test_id = test_id|default('') %}
+
 <!-- Test Info Card -->
 <div class="test-info">
     <p><strong>Test:</strong> {{ test.name }}</p>

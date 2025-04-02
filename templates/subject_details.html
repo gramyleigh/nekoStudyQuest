@@ -15,6 +15,13 @@
 {% endblock %}
 
 {% block content %}
+{# Initialize variables to prevent errors with null values #}
+{% set resources = resources|default([]) %}
+{% set tests = tests|default([]) %}
+{% set total_resources = total_resources|default(0) %}
+{% set completed_resources = completed_resources|default(0) %}
+{% set progress_percentage = progress_percentage|default(0) %}
+
 <div class="dashboard-grid">
     <!-- Progress Widget - Left Side -->
     <div class="widget progress-widget">

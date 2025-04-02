@@ -15,6 +15,11 @@
 {% endblock %}
 
 {% block content %}
+{# Initialize variables to prevent errors with null values #}
+{% set stats = stats|default({}) %}
+{% set upcoming_tests = upcoming_tests|default([]) %}
+{% set past_tests = past_tests|default([]) %}
+
 <!-- Info Box -->
 <div class="info-box">
     <div class="info-title">Statistics Dashboard</div>
