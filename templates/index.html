@@ -1283,8 +1283,8 @@
 
                     {% if upcoming_tests %}
                         {% for test in upcoming_tests %}
-                            <!-- Make the test item a link to the test details page -->
-                            <a href="{{ url_for('subject_details', subject_name=test.subject_name) }}/test/{{ test.test_id }}" class="current-test-item">
+                            <!-- Make the test item a link to the test progress tracking page -->
+                            <a href="{{ url_for('track_progress', subject_name=test.subject_name, test_id=test.test_id) }}" class="current-test-item">
                                 <div class="current-test-header">
                                     <div class="current-test-title">{{ test.test_name }}</div>
                                     <div class="current-test-date">{{ test.date }}</div>
