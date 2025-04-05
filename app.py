@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 from models.topic import Topic
 from models.resource import Resource
 from models.test import Test
+import time
 
 load_dotenv()
 
@@ -54,20 +55,77 @@ def ensure_file_structure():
 app = Flask(__name__, static_folder='static')
 app.secret_key = 'your_secret_key'  # Required for session
 
+# Add custom strptime filter
+def strptime_filter(date_str, format_str):
+    try:
+        return datetime.strptime(date_str, format_str)
+    except (ValueError, TypeError):
+        return None
+
+# Register the strptime filter
+app.jinja_env.filters['strptime'] = strptime_filter
+
+# Make timedelta available in templates
+app.jinja_env.globals['timedelta'] = timedelta
+
 # Email configuration
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'  # Or another SMTP server
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
-app.config['MAIL_DEFAULT_SENDER'] = 'gramyleigh@gmail.com'  # Replace with your email
-mail = Mail(app)
+app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_USERNAME')
+app.config['MAIL_MAX_EMAILS'] = 100  # Limit number of emails sent in a single connection
+app.config['MAIL_SUPPRESS_SEND'] = False  # Set to True in testing environment
+app.config['MAIL_ASCII_ATTACHMENTS'] = False  # Allow UTF-8 attachments
+
+# Initialize Mail with error handling
+try:
+    mail = Mail(app)
+except Exception as e:
+    print(f"Error initializing email configuration: {str(e)}")
+    mail = None
+
+def validate_email_config():
+    """Validate email configuration and return status"""
+    if not app.config['MAIL_USERNAME'] or not app.config['MAIL_PASSWORD']:
+        return False, "Email configuration is incomplete. Please check MAIL_USERNAME and MAIL_PASSWORD in .env file."
+    
+    try:
+        with mail.connect() as conn:
+            return True, "Email configuration is valid and connection successful."
+    except Exception as e:
+        return False, f"Email configuration error: {str(e)}"
+
+def send_email_with_retry(subject, recipients, html_body, max_retries=3, retry_delay=1):
+    """Send an email with retry mechanism"""
+    if not mail:
+        flash("Email service is not configured properly.", "error")
+        return False
+
+    for attempt in range(max_retries):
+        try:
+            msg = Message(
+                subject=subject,
+                recipients=recipients,
+                html=html_body,
+                sender=app.config['MAIL_USERNAME']
+            )
+            mail.send(msg)
+            return True
+        except Exception as e:
+            print(f"Email send attempt {attempt + 1} failed: {str(e)}")
+            if attempt < max_retries - 1:
+                time.sleep(retry_delay)
+            else:
+                flash(f"Failed to send email after {max_retries} attempts: {str(e)}", "error")
+                return False
 
 # ===== Email Functions =====
 
 def send_test_reminder_email(subject_name, test_name, test_date, progress):
     """Send a reminder email for an upcoming test"""
-    recipient = app.config['MAIL_USERNAME']  # Send to yourself
+    recipient = app.config['MAIL_USERNAME']
 
     # Calculate days until test
     test_date_obj = datetime.strptime(test_date, '%Y-%m-%d').date()
@@ -75,44 +133,48 @@ def send_test_reminder_email(subject_name, test_name, test_date, progress):
     days_remaining = (test_date_obj - today).days
 
     subject = f"📚 Test Reminder: {test_name} - {subject_name}"
-
+    
     body = f"""
     <html>
     <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #f9f9f9;">
-        <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 20px; border-radius: 10px; border-top: 5px solid #ff5f8f; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);">
-            <h1 style="color: #ff5f8f;">Test Reminder</h1>
+        <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 20px; border-radius: 10px; border-top: 5px solid #6b58cd; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);">
+            <h1 style="color: #6b58cd;">Test Reminder</h1>
             <p>Hello! This is a reminder about your upcoming test:</p>
             <div style="background-color: #f0f0f0; padding: 15px; border-radius: 8px; margin: 15px 0;">
-                <h2 style="margin-top: 0; color: #6b58cd;">{test_name}</h2>
+                <h2 style="margin-top: 0; color: #ff5f8f;">{test_name}</h2>
                 <p><strong>Subject:</strong> {subject_name}</p>
                 <p><strong>Date:</strong> {test_date}</p>
                 <p><strong>Days Remaining:</strong> {days_remaining}</p>
-                <div style="background-color: #eee; border-radius: 10px; height: 20px; overflow: hidden; margin: 10px 0;">
-                    <div style="background-color: #66bb6a; height: 100%; width: {progress}%; text-align: center; color: white; line-height: 20px; font-size: 12px;">
-                        {progress}%
+                <div style="background-color: white; border-radius: 5px; padding: 10px; margin-top: 10px;">
+                    <h3 style="color: #66bb6a;">Current Progress: {progress}%</h3>
+                    <div style="background-color: #f5f5f5; border-radius: 10px; height: 20px; overflow: hidden;">
+                        <div style="width: {progress}%; height: 100%; background-color: #66bb6a;"></div>
                     </div>
                 </div>
-                <p><strong>Current Progress:</strong> {progress}%</p>
             </div>
-            <p>Keep up the good work with your studies!</p>
-            <p>Meow~ 🐱</p>
+            <p>Keep up the great work! Remember to:</p>
+            <ul style="color: #555;">
+                <li>Review your study materials</li>
+                <li>Take practice tests</li>
+                <li>Get enough rest before the test</li>
+            </ul>
+            <p>Nya~ 😺</p>
             <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #999;">
-                <p>This is an automated message from your Neko Study Quest app.</p>
+                <p>This is an automated reminder from your Neko Study Quest app.</p>
             </div>
         </div>
     </body>
     </html>
     """
 
-    msg = Message(subject=subject, recipients=[recipient], html=body)
-    mail.send(msg)
-
-    flash(f"Reminder email sent for {test_name}!", "success")
-
+    if send_email_with_retry(subject, [recipient], body):
+        flash(f"Test reminder email sent for {test_name}!", "success")
+        return True
+    return False
 
 def send_daily_progress_email(subject_name, test_name, resources_completed):
     """Send a daily progress summary email"""
-    recipient = app.config['MAIL_USERNAME']  # Send to yourself
+    recipient = app.config['MAIL_USERNAME']
 
     subject = f"📊 Daily Progress: {test_name} - {subject_name}"
 
@@ -141,38 +203,48 @@ def send_daily_progress_email(subject_name, test_name, resources_completed):
     </html>
     """
 
-    msg = Message(subject=subject, recipients=[recipient], html=body)
-    mail.send(msg)
-
-    flash(f"Daily progress email sent for {test_name}!", "success")
-
+    if send_email_with_retry(subject, [recipient], body):
+        flash(f"Daily progress email sent for {test_name}!", "success")
+        return True
+    return False
 
 def send_test_complete_email(subject_name, test_name, progress, completed_resources, total_resources):
     """Send an email when a test is completed"""
-    recipient = app.config['MAIL_USERNAME']  # Send to yourself
+    recipient = app.config['MAIL_USERNAME']
 
     subject = f"🎉 Test Complete: {test_name} - {subject_name}"
-
+    
+    completion_percentage = (completed_resources / total_resources) * 100 if total_resources > 0 else 0
+    
     body = f"""
     <html>
     <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #f9f9f9;">
-        <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 20px; border-radius: 10px; border-top: 5px solid #ffeb3b; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);">
-            <h1 style="color: #ffeb3b;">Test Complete!</h1>
-            <p>Hello! You've completed your test:</p>
+        <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 20px; border-radius: 10px; border-top: 5px solid #6b58cd; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);">
+            <h1 style="color: #6b58cd;">Test Preparation Complete! 🎊</h1>
+            <p>Congratulations! You've completed your preparation for:</p>
             <div style="background-color: #f0f0f0; padding: 15px; border-radius: 8px; margin: 15px 0;">
                 <h2 style="margin-top: 0; color: #ff5f8f;">{test_name}</h2>
                 <p><strong>Subject:</strong> {subject_name}</p>
                 <p><strong>Date:</strong> {date.today().strftime('%Y-%m-%d')}</p>
-                <div style="background-color: #eee; border-radius: 10px; height: 20px; overflow: hidden; margin: 10px 0;">
-                    <div style="background-color: #66bb6a; height: 100%; width: {progress}%; text-align: center; color: white; line-height: 20px; font-size: 12px;">
-                        {progress}%
+                <div style="background-color: white; border-radius: 5px; padding: 10px; margin-top: 10px;">
+                    <h3 style="color: #66bb6a;">Final Progress: {progress}%</h3>
+                    <div style="background-color: #f5f5f5; border-radius: 10px; height: 20px; overflow: hidden;">
+                        <div style="width: {progress}%; height: 100%; background-color: #66bb6a;"></div>
                     </div>
                 </div>
-                <p><strong>Final Progress:</strong> {progress}%</p>
-                <p><strong>Resources Completed:</strong> {completed_resources} out of {total_resources}</p>
+                <div style="margin-top: 15px;">
+                    <h3 style="color: #66bb6a;">Resources Completed: {completed_resources}/{total_resources} ({completion_percentage:.1f}%)</h3>
+                </div>
             </div>
-            <p>Congratulations on completing your test! 🎊</p>
-            <p>Purr-fect work! 🐈</p>
+            <p>You're well prepared for your test! Remember to:</p>
+            <ul style="color: #555;">
+                <li>Review any challenging topics</li>
+                <li>Get a good night's sleep</li>
+                <li>Arrive early to your test location</li>
+                <li>Stay calm and confident!</li>
+            </ul>
+            <p>Best of luck on your test! 🍀</p>
+            <p>Nya~ 😺</p>
             <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #999;">
                 <p>This is an automated message from your Neko Study Quest app.</p>
             </div>
@@ -181,62 +253,59 @@ def send_test_complete_email(subject_name, test_name, progress, completed_resour
     </html>
     """
 
-    msg = Message(subject=subject, recipients=[recipient], html=body)
-    mail.send(msg)
-
-    flash(f"Test completion email sent for {test_name}!", "success")
-
+    if send_email_with_retry(subject, [recipient], body):
+        flash(f"Test completion email sent for {test_name}!", "success")
+        return True
+    return False
 
 def send_upcoming_tests_summary_email(upcoming_tests):
     """Send a summary email for all upcoming tests"""
-    if not upcoming_tests:
-        flash("No upcoming tests to send reminders for!", "warning")
-        return False
+    recipient = app.config['MAIL_USERNAME']
     
-    recipient = app.config['MAIL_USERNAME']  # Send to yourself
-    
-    subject = f"📚 Upcoming Tests Summary - Next {len(upcoming_tests)} Tests"
+    subject = f"📅 Upcoming Tests Summary ({len(upcoming_tests)} tests)"
     
     # Sort tests by date
-    sorted_tests = sorted(upcoming_tests, key=lambda x: datetime.strptime(x['date'], '%Y-%m-%d'))
+    upcoming_tests.sort(key=lambda x: datetime.strptime(x['date'], '%Y-%m-%d'))
+    
+    # Generate test list HTML
+    test_list_html = ""
+    for test in upcoming_tests:
+        days_until = (datetime.strptime(test['date'], '%Y-%m-%d').date() - date.today()).days
+        test_list_html += f"""
+        <div style="background-color: #f0f0f0; padding: 15px; border-radius: 8px; margin: 15px 0;">
+            <h3 style="margin-top: 0; color: #ff5f8f;">{test['name']}</h3>
+            <p><strong>Subject:</strong> {test['subject']}</p>
+            <p><strong>Date:</strong> {test['date']} ({days_until} days away)</p>
+            <div style="background-color: white; border-radius: 5px; padding: 10px;">
+                <h4 style="color: #66bb6a; margin: 0;">Progress: {test['progress']}%</h4>
+                <div style="background-color: #f5f5f5; border-radius: 10px; height: 20px; overflow: hidden; margin-top: 5px;">
+                    <div style="width: {test['progress']}%; height: 100%; background-color: #66bb6a;"></div>
+                </div>
+            </div>
+        </div>
+        """
     
     body = f"""
     <html>
     <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #f9f9f9;">
         <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 20px; border-radius: 10px; border-top: 5px solid #6b58cd; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);">
             <h1 style="color: #6b58cd;">Upcoming Tests Summary</h1>
-            <p>Hello! Here's a summary of your upcoming tests:</p>
-            
-            {''.join([f'''
-            <div style="background-color: #f0f0f0; padding: 15px; border-radius: 8px; margin: 15px 0;">
-                <h2 style="margin-top: 0; color: #ff5f8f;">{test['name']}</h2>
-                <p><strong>Subject:</strong> {test['subject_name']}</p>
-                <p><strong>Date:</strong> {test['date']}</p>
-                
-                <div style="background-color: #eee; border-radius: 10px; height: 20px; overflow: hidden; margin: 10px 0;">
-                    <div style="background-color: #66bb6a; height: 100%; width: {test['progress']}%; text-align: center; color: white; line-height: 20px; font-size: 12px;">
-                        {test['progress']}%
-                    </div>
-                </div>
-                <p><strong>Current Progress:</strong> {test['progress']}%</p>
-            </div>
-            ''' for test in sorted_tests])}
-            
-            <p>Keep up the good work with your studies!</p>
-            <p>Meow~ 🐱</p>
+            <p>Hello! Here are your upcoming tests:</p>
+            {test_list_html}
+            <p>Keep up the great work with your studies!</p>
+            <p>Nya~ 😺</p>
             <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #999;">
-                <p>This is an automated message from your Neko Study Quest app.</p>
+                <p>This is an automated summary from your Neko Study Quest app.</p>
             </div>
         </div>
     </body>
     </html>
     """
     
-    msg = Message(subject=subject, recipients=[recipient], html=body)
-    mail.send(msg)
-    
-    flash(f"Summary email sent for {len(upcoming_tests)} upcoming tests!", "success")
-    return True
+    if send_email_with_retry(subject, [recipient], body):
+        flash(f"Summary email sent for {len(upcoming_tests)} upcoming tests!", "success")
+        return True
+    return False
 
 
 # ===== Data Model Functions =====
@@ -1103,397 +1172,68 @@ def test_statistics(subject_name, test_id):
         # Calculate progress
         test['progress'] = calculate_progress(test, subject_name)
 
-        # Get date counts for chart
+        # Load progress records
+        progress_records = load_progress_records(subject_name, test_id)
+        records = progress_records.get('records', [])
+        
+        # Get date counts for chart (already sorted by date)
         date_counts = get_date_counts(subject_name, test_id)
 
         # Get topic counts for chart
         topic_counts = get_topic_counts(subject_name, test_id)
+        
+        # Process resources to include completion data
+        for topic in test.get('topics', []):
+            if isinstance(topic, dict) and 'resources' in topic:
+                for resource in topic.get('resources', []):
+                    # Count completed resources
+                    resource['completed'] = len([r for r in records
+                                               if r.get('resource_id') == resource.get('id')])
+                    
+                    # Add scores if they exist
+                    resource['scores'] = []
+                    for record in records:
+                        if record.get('resource_id') == resource.get('id') and 'score' in record:
+                            resource['scores'].append(record.get('score'))
+        
+        # Collect all scores for score analysis
+        all_scores = []
+        for record in records:
+            if 'score' in record and record.get('score') is not None:
+                all_scores.append(record.get('score'))
+                
+        # Calculate average score
+        avg_score = sum(all_scores) / len(all_scores) if all_scores else 0
+        
+        # Get unique dates from records
+        unique_dates = set()
+        for record in records:
+            record_date = record.get('date')
+            if record_date:
+                unique_dates.add(record_date)
+        
+        sorted_dates = sorted(list(unique_dates))
+
+        # Calculate days remaining if test has a date
+        if 'date' in test:
+            try:
+                test_date = datetime.strptime(test['date'], '%Y-%m-%d').date()
+                today = date.today()
+                test['days_remaining'] = (test_date - today).days
+            except (ValueError, TypeError):
+                test['days_remaining'] = 0
 
         return render_template('test_statistics.html',
-                               subject_name=subject_name,
-                               test=test,
-                               date_counts=date_counts,
-                               topic_counts=topic_counts)
+                           subject_name=subject_name,
+                           test=test,
+                           date_counts=date_counts,
+                           topic_counts=topic_counts,
+                           all_scores=all_scores,
+                           avg_score=avg_score,
+                           sorted_dates=sorted_dates,
+                           records=records)
 
     flash('Test not found!', 'error')
-    return redirect(url_for('subject_details', subject_name=subject_name))
-
-
-@app.route('/edit-subjects')
-def edit_subjects():
-    """Edit subjects"""
-    subjects = load_subjects()
-    
-    # Get the count of tests and resources for each subject
-    subject_stats = {}
-    for subject_name in subjects:
-        subject_data = load_subject_details(subject_name)
-        
-        # Count tests
-        test_count = len(subject_data.get('tests', []))
-        
-        # Count resources across all tests
-        resource_count = 0
-        for test in subject_data.get('tests', []):
-            if isinstance(test, dict) and 'topics' in test:
-                for topic in test.get('topics', []):
-                    if isinstance(topic, dict) and 'resources' in topic:
-                        resource_count += len(topic.get('resources', []))
-        
-        subject_stats[subject_name] = {
-            'tests': test_count,
-            'resources': resource_count
-        }
-    
-    return render_template('edit_subjects.html', subjects=subjects, subject_stats=subject_stats)
-
-
-@app.route('/add-subject', methods=['POST'])
-def add_subject():
-    """Add a new subject"""
-    subject_name = request.form.get('subject_name', '').strip()
-    
-    # Validate subject name
-    validated_name, error = validate_subject_name(subject_name)
-    
-    if error:
-        flash(f"Error: {error}", "error")
-        return redirect(url_for('edit_subjects'))
-    
-    # Load existing subjects
-    subjects = load_subjects()
-    
-    # Check if subject already exists
-    if validated_name in subjects:
-        flash(f'Subject "{validated_name}" already exists!', 'error')
-    else:
-        # Add new subject
-        subjects.append(validated_name)
-        
-        # Save updated subjects
-        save_subjects(subjects)
-        
-        # Create empty details file
-        save_subject_details(validated_name, {"resources": [], "tests": [], "study_materials": []})
-        
-        flash(f'Subject "{validated_name}" added successfully!', 'success')
-    
-    return redirect(url_for('edit_subjects'))
-
-
-@app.route('/delete_subject', methods=['POST'])
-def delete_subject():
-    subject_to_delete = request.form.get('subject_name', '')
-
-    subjects = load_subjects()
-    if subject_to_delete in subjects:
-        subjects.remove(subject_to_delete)
-        save_subjects(subjects)
-
-        # Also delete the subject details file if it exists
-        file_path = get_subject_details_file(subject_to_delete)
-        if os.path.exists(file_path):
-            os.remove(file_path)
-
-    return redirect(url_for('edit_subjects'))
-
-
-
-
-# Then add this with a completely different function name:
-
-
-
-@app.template_filter('today')
-def today():
-    """Return today's date as a datetime object for use in templates"""
-    return datetime.now()
-
-@app.route('/past-tests')
-def past_tests():
-    """Show statistics for past tests"""
-    subjects = load_subjects()
-    past_tests = []
-
-    for subject_name in subjects:
-        # Load details for the subject
-        subject_data = load_subject_details(subject_name)
-
-        # Process tests
-        for test in subject_data.get('tests', []):
-            # Make sure test is a dictionary with an id and date
-            if isinstance(test, dict) and 'id' in test and 'date' in test:
-                # Check if test is in the past
-                if is_past_test(test['date']):
-                    # Calculate progress
-                    test['progress'] = calculate_progress(test, subject_name)
-
-                    # Add subject name to test
-                    test['subject_name'] = subject_name
-
-                    # Load records for the test
-                    progress_records = load_progress_records(subject_name, test['id'])
-                    test['records'] = progress_records.get('records', [])
-
-                    # Get date counts for the test
-                    test['date_counts'] = get_date_counts(subject_name, test['id'])
-
-                    # Add test ID for chart reference
-                    test['test_id'] = test['id']
-
-                    past_tests.append(test)
-
-    # Sort tests by date (most recent first)
-    if past_tests:
-        past_tests = sorted(past_tests,
-                            key=lambda x: datetime.strptime(x['date'], '%Y-%m-%d'),
-                            reverse=True)
-
-    return render_template('past_tests.html', past_tests=past_tests)
-
-
-# === Email Notification Routes ===
-
-@app.route('/send-test-reminder/<subject_name>/<test_id>', methods=['POST'])
-def send_test_reminder(subject_name, test_id):
-    """Send a test reminder email"""
-    # Load subject details
-    subject_data = load_subject_details(subject_name)
-
-    # Find the test
-    test = next((t for t in subject_data.get('tests', []) if isinstance(t, dict) and t.get('id') == test_id), None)
-
-    if test:
-        # Calculate progress
-        progress = calculate_progress(test, subject_name)
-
-        # Send reminder email
-        send_test_reminder_email(subject_name, test['name'], test['date'], progress)
-
-        return redirect(url_for('track_progress', subject_name=subject_name, test_id=test_id))
-
-    flash('Test not found!', 'error')
-    return redirect(url_for('subject_details', subject_name=subject_name))
-
-
-@app.route('/send-progress-summary/<subject_name>/<test_id>', methods=['POST'])
-def send_progress_summary(subject_name, test_id):
-    """Send a progress summary email"""
-    # Load subject details
-    subject_data = load_subject_details(subject_name)
-
-    # Find the test
-    test = next((t for t in subject_data.get('tests', []) if isinstance(t, dict) and t.get('id') == test_id), None)
-
-    if test:
-        # Get today's resources
-        todays_resources = get_todays_resources(subject_name, test_id)
-
-        # Send progress email
-        if todays_resources:
-            send_daily_progress_email(subject_name, test['name'], todays_resources)
-            flash('Progress summary email sent!', 'success')
-        else:
-            flash('No progress recorded today!', 'error')
-
-        return redirect(url_for('track_progress', subject_name=subject_name, test_id=test_id))
-
-    flash('Test not found!', 'error')
-    return redirect(url_for('subject_details', subject_name=subject_name))
-
-
-@app.route('/check-upcoming-tests')
-def check_upcoming_tests():
-    """Check for upcoming tests and send reminders"""
-    upcoming_tests = get_upcoming_tests(days=7)
-
-    for test in upcoming_tests:
-        subject_name = test['subject_name']
-        test_date_obj = datetime.strptime(test['date'], '%Y-%m-%d').date()
-        today = date.today()
-        days_remaining = (test_date_obj - today).days
-
-        # Send reminder for tests that are 7, 3, or 1 day away
-        if days_remaining in [7, 3, 1]:
-            send_test_reminder_email(subject_name, test['name'], test['date'], test['progress'])
-
-    flash('Checked for upcoming tests and sent reminders!', 'success')
-    return redirect(url_for('index'))
-
-
-@app.route('/static/<path:filename>')
-def serve_static(filename):
-    """Serve static files"""
-    return send_from_directory(app.static_folder, filename)
-
-
-@app.route('/update-progress', methods=['POST'])
-def update_progress():
-    """Update progress for a resource (increment or decrement) with optional score"""
-    try:
-        data = request.get_json()
-        resource_id = data.get('resource_id')
-        change = data.get('change', 0)  # 1 for increment, -1 for decrement
-        score = data.get('score')  # Optional score (percentage)
-
-        # We need to find which subject and test this resource belongs to
-        subjects = load_subjects()
-        for subject_name in subjects:
-            subject_data = load_subject_details(subject_name)
-            for test in subject_data.get('tests', []):
-                if isinstance(test, dict) and 'topics' in test and 'id' in test:
-                    for topic in test.get('topics', []):
-                        if isinstance(topic, dict) and 'resources' in topic:
-                            for resource in topic.get('resources', []):
-                                if isinstance(resource, dict) and resource.get('id') == resource_id:
-                                    # Found the resource - now update progress
-                                    progress_data = load_progress_records(subject_name, test['id'])
-
-                                    # Get current completed count
-                                    completed = 0
-                                    for record in progress_data.get('records', []):
-                                        if record.get('resource_id') == resource_id:
-                                            completed += 1
-
-                                    # Calculate new completion count
-                                    total = resource.get('count', 1)
-                                    new_completed = completed + change
-
-                                    # Ensure completed count is within bounds
-                                    if new_completed < 0:
-                                        new_completed = 0
-                                    if new_completed > total:
-                                        new_completed = total
-
-                                    # If incrementing, add a new record
-                                    if change > 0 and new_completed > completed:
-                                        # Initialize records list if not exists
-                                        if 'records' not in progress_data:
-                                            progress_data['records'] = []
-
-                                        # Add record with timestamp
-                                        now = datetime.now()
-                                        record = {
-                                            'id': str(uuid.uuid4()),
-                                            'topic_id': topic['id'],
-                                            'topic_name': topic['name'],
-                                            'resource_id': resource_id,
-                                            'resource_name': resource['name'],
-                                            'notes': '',
-                                            'date': now.strftime('%Y-%m-%d'),
-                                            'timestamp': now.strftime('%Y-%m-%d %H:%M:%S')
-                                        }
-
-                                        # Add score if provided
-                                        if score is not None:
-                                            record['score'] = float(score)
-
-                                        progress_data['records'].append(record)
-
-                                    # If decrementing, remove the latest record
-                                    elif change < 0 and new_completed < completed:
-                                        # Find and remove the last record for this resource
-                                        for i in range(len(progress_data.get('records', [])) - 1, -1, -1):
-                                            if progress_data['records'][i].get('resource_id') == resource_id:
-                                                del progress_data['records'][i]
-                                                break
-
-                                    # Save progress records
-                                    save_progress_records(subject_name, test['id'], progress_data)
-
-                                    # Calculate new progress percentage
-                                    progress_percentage = calculate_progress(test, subject_name)
-
-                                    return jsonify({
-                                        'success': True,
-                                        'completed': new_completed,
-                                        'total': total,
-                                        'progress': progress_percentage
-                                    })
-
-        return jsonify({'success': False, 'message': 'Resource not found'}), 404
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)}), 500
-
-@app.route('/send-reminder', methods=['POST'])
-def send_reminder():
-    """Send a study reminder email"""
-    try:
-        data = request.get_json()
-        subject = data.get('subject')
-        message = data.get('message')
-        recipient = data.get('recipient')
-
-        msg = Message(
-            subject=f'Study Reminder: {subject}',
-            sender=app.config['MAIL_USERNAME'],
-            recipients=[recipient]
-        )
-        msg.body = message
-        mail.send(msg)
-        
-        return jsonify({'success': True, 'message': 'Reminder sent successfully!'})
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)}), 500
-
-@app.route('/add-todo', methods=['POST'])
-def add_todo():
-    """Add a new task to the To-Do List."""
-    task_text = request.form.get('task_text', '').strip()
-    subject = request.form.get('subject', '').strip()
-
-    if not task_text or not subject:
-        return jsonify({'success': False, 'message': 'Task text and subject are required.'}), 400
-
-    # Initialize session data if not present
-    if 'todo_data' not in session:
-        session['todo_data'] = {'tasks': []}
-
-    # Add the new task
-    task_id = str(uuid.uuid4())
-    session['todo_data']['tasks'].append({
-        'id': task_id,
-        'text': task_text,
-        'subject': subject,
-        'completed': False
-    })
-    session.modified = True
-
-    return jsonify({'success': True, 'task_id': task_id, 'message': 'Task added successfully.'})
-
-@app.route('/toggle-todo/<task_id>', methods=['POST'])
-def toggle_todo(task_id):
-    """Toggle the completion status of a task."""
-    if 'todo_data' not in session:
-        return jsonify({'success': False, 'message': 'No tasks found.'}), 400
-
-    for task in session['todo_data']['tasks']:
-        if task['id'] == task_id:
-            task['completed'] = not task['completed']
-            session.modified = True
-            return jsonify({'success': True, 'completed': task['completed'], 'message': 'Task updated successfully.'})
-
-    return jsonify({'success': False, 'message': 'Task not found.'}), 404
-
-@app.context_processor
-def inject_todo_data():
-    """Inject To-Do List data into templates."""
-    return {'todo_data': session.get('todo_data', {'tasks': []})}
-
-@app.route('/subject/<subject_name>/delete_test/<test_id>', methods=['POST'])
-def delete_subject_test(subject_name, test_id):
-    """Delete a test from a subject"""
-    # Load existing details
-    details = load_subject_details(subject_name)
-
-    # Find and remove the test
-    if 'tests' in details:
-        details['tests'] = [test for test in details['tests'] if test.get('id') != test_id]
-
-    # Save updated details
-    save_subject_details(subject_name, details)
-
-    flash('Test deleted successfully!', 'success')
     return redirect(url_for('subject_details', subject_name=subject_name))
 
 
@@ -1706,17 +1446,680 @@ def add_topic_resource(subject_name, test_id, topic_id):
     return redirect(url_for('edit_test_topics', subject_name=subject_name, test_id=test_id))
 
 
+
+
+@app.route('/subject/<subject_name>/delete_topic/<topic_id>', methods=['POST'])
+def delete_subject_topic(subject_name, topic_id):
+    """Delete a topic from a subject"""
+    # Load existing details
+    details = load_subject_details(subject_name)
+
+    # Remove the topic
+    details['topics'] = [
+        topic for topic in details.get('topics', []) 
+        if topic.get('id') != topic_id
+    ]
+
+    # Save updated details
+    save_subject_details(subject_name, details)
+    
+    flash('Topic deleted successfully!', 'success')
+    return redirect(url_for('subject_details', subject_name=subject_name))
+
+@app.route('/subject/<subject_name>/topic/<topic_id>/delete_resource/<resource_id>', methods=['POST'])
+def delete_subject_topic_resource(subject_name, topic_id, resource_id):
+    """Delete a resource from a subject's topic"""
+    # Load existing details
+    details = load_subject_details(subject_name)
+
+    # Find the topic
+    for topic in details.get('topics', []):
+        if topic.get('id') == topic_id:
+            # Remove the resource
+            topic['resources'] = [
+                resource for resource in topic.get('resources', [])
+                if resource.get('id') != resource_id
+            ]
+            break
+
+    # Save updated details
+    save_subject_details(subject_name, details)
+    
+    flash('Resource deleted successfully!', 'success')
+    return redirect(url_for('subject_details', subject_name=subject_name))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@app.route('/edit-subject-name', methods=['POST'])
+def edit_subject_name():
+    """
+    Edit a subject's name.
+    This function handles both regular form submissions and AJAX requests.
+    For AJAX requests, it returns JSON responses.
+    For regular form submissions, it redirects to the index page.
+    """
+    original_subject_name = request.form.get('original_subject_name', '').strip()
+    new_subject_name = request.form.get('new_subject_name', '').strip()
+
+    if not original_subject_name or not new_subject_name:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'success': False, 'message': 'Both original and new subject names are required!'})
+        else:
+            flash('Both original and new subject names are required!', 'error')
+            return redirect(url_for('index'))
+
+    # Load subjects
+    subjects = load_subjects()
+
+    # Check if original subject exists
+    if original_subject_name not in subjects:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'success': False, 'message': f'Subject "{original_subject_name}" not found!'})
+        else:
+            flash(f'Subject "{original_subject_name}" not found!', 'error')
+            return redirect(url_for('index'))
+
+    # Check if new subject name already exists
+    if new_subject_name in subjects and new_subject_name != original_subject_name:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'success': False, 'message': f'Subject "{new_subject_name}" already exists!'})
+        else:
+            flash(f'Subject "{new_subject_name}" already exists!', 'error')
+            return redirect(url_for('index'))
+
+    try:
+        # Update the subject name in the subjects list
+        subjects[subjects.index(original_subject_name)] = new_subject_name
+        save_subjects(subjects)
+
+        # Update the subject details file
+        original_file_path = get_subject_details_file(original_subject_name)
+        if os.path.exists(original_file_path):
+            # Load original subject details
+            subject_details = load_subject_details(original_subject_name)
+            
+            # Save with new name
+            save_subject_details(new_subject_name, subject_details)
+            
+            # Remove original file
+            os.remove(original_file_path)
+
+        # Update any progress records
+        safe_original = re.sub(r'[^\w]', '_', original_subject_name)
+        safe_new = re.sub(r'[^\w]', '_', new_subject_name)
+        
+        for filename in os.listdir(PROGRESS_DIR):
+            if filename.startswith(f"{safe_original}_"):
+                # Get the test_id part
+                test_id = filename.replace(f"{safe_original}_", "").split("_")[0]
+                
+                # Load progress data
+                progress_file = os.path.join(PROGRESS_DIR, filename)
+                with open(progress_file, 'r') as file:
+                    progress_data = json.load(file)
+                
+                # Save to new file
+                new_progress_file = os.path.join(PROGRESS_DIR, f"{safe_new}_{test_id}_progress.json")
+                with open(new_progress_file, 'w') as file:
+                    json.dump(progress_data, file)
+                
+                # Remove original file
+                os.remove(progress_file)
+
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({
+                'success': True, 
+                'message': f'Subject renamed from "{original_subject_name}" to "{new_subject_name}" successfully!',
+                'subject': new_subject_name
+            })
+        else:
+            flash(f'Subject renamed from "{original_subject_name}" to "{new_subject_name}" successfully!', 'success')
+
+    except Exception as e:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'success': False, 'message': f'Error updating subject: {str(e)}'})
+        else:
+            flash(f'Error updating subject: {str(e)}', 'error')
+
+    return redirect(url_for('index'))
+
+@app.route('/edit-subjects')
+def edit_subjects():
+    """Edit subjects"""
+    subjects = load_subjects()
+    
+    # Get the count of tests and resources for each subject
+    subject_stats = {}
+    for subject_name in subjects:
+        subject_data = load_subject_details(subject_name)
+        
+        # Count tests
+        test_count = len(subject_data.get('tests', []))
+        
+        # Count resources across all tests
+        resource_count = 0
+        for test in subject_data.get('tests', []):
+            if isinstance(test, dict) and 'topics' in test:
+                for topic in test.get('topics', []):
+                    if isinstance(topic, dict) and 'resources' in topic:
+                        resource_count += len(topic.get('resources', []))
+        
+        subject_stats[subject_name] = {
+            'tests': test_count,
+            'resources': resource_count
+        }
+    
+    return render_template('edit_subjects.html', subjects=subjects, subject_stats=subject_stats)
+
+
+@app.route('/add-subject', methods=['POST'])
+def add_subject():
+    """
+    Add a new subject.
+    This function handles both regular form submissions and AJAX requests.
+    For AJAX requests, it returns JSON responses.
+    For regular form submissions, it redirects to the index page.
+    """
+    subject_name = request.form.get('subject_name', '').strip()
+
+    if subject_name:
+        # Load existing subjects
+        subjects = load_subjects()
+
+        # Check if subject already exists
+        if subject_name in subjects:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'success': False, 'message': f'Subject "{subject_name}" already exists!'})
+            else:
+                flash(f'Subject "{subject_name}" already exists!', 'error')
+        else:
+            # Add new subject
+            subjects.append(subject_name)
+
+            # Save updated subjects
+            save_subjects(subjects)
+
+            # Create empty details file
+            save_subject_details(subject_name, {"resources": [], "tests": [], "study_materials": []})
+
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'success': True, 'message': f'Subject "{subject_name}" added successfully!', 'subject': subject_name})
+            else:
+                flash(f'Subject "{subject_name}" added successfully!', 'success')
+    else:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'success': False, 'message': 'Please enter a valid subject name!'})
+        else:
+            flash('Please enter a valid subject name!', 'error')
+
+    # Redirect to index page instead of edit_subjects
+    return redirect(url_for('index'))
+
+@app.route('/delete_subject', methods=['POST'])
+def delete_subject():
+    """
+    Delete a subject and all its associated data.
+    This route handles POST requests from the delete button on subject cards.
+    No confirmation page is shown - deletion happens immediately.
+    """
+    # Get the subject name from the form submission
+    subject_to_delete = request.form.get('subject_name', '')
+
+    # Load the current list of subjects
+    subjects = load_subjects()
+    
+    # Check if the subject exists before trying to delete it
+    if subject_to_delete in subjects:
+        # Remove the subject from the list
+        subjects.remove(subject_to_delete)
+        
+        # Save the updated subjects list
+        save_subjects(subjects)
+
+        # Clean up: Delete the subject details file
+        file_path = get_subject_details_file(subject_to_delete)
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            
+        # Clean up: Delete all related progress files
+        # First create a safe version of the subject name for filename matching
+        safe_name = re.sub(r'[^\w]', '_', subject_to_delete)
+        
+        # Loop through all files in the progress directory
+        for filename in os.listdir(PROGRESS_DIR):
+            # If the file belongs to this subject, delete it
+            if filename.startswith(f"{safe_name}_"):
+                os.remove(os.path.join(PROGRESS_DIR, filename))
+                
+        # Show a success message
+        flash(f'Subject "{subject_to_delete}" deleted successfully!', 'success')
+    else:
+        # Subject not found, show an error message
+        flash(f'Subject "{subject_to_delete}" not found!', 'error')
+
+    # Redirect back to the index page
+    return redirect(url_for('index'))
+
+
+
+@app.template_filter('today')
+def today():
+    """Return today's date as a datetime object for use in templates"""
+    return datetime.now().date()
+
+# Make today() available as a function in templates
+app.jinja_env.globals['today'] = today
+
+@app.route('/past-tests')
+def past_tests():
+    """Show statistics for past tests"""
+    subjects = load_subjects()
+    past_tests = []
+    
+    for subject_name in subjects:
+        # Load details for the subject
+        subject_data = load_subject_details(subject_name)
+        
+        # Process tests
+        for test in subject_data.get('tests', []):
+            # Make sure test is a dictionary with an id and date
+            if isinstance(test, dict) and 'id' in test and 'date' in test:
+                # Check if test is in the past
+                if is_past_test(test['date']):
+                    # Calculate progress
+                    test['progress'] = calculate_progress(test, subject_name)
+                    
+                    # Add subject name to test
+                    test['subject_name'] = subject_name
+                    
+                    # Load records for the test
+                    progress_records = load_progress_records(subject_name, test['id'])
+                    test['records'] = progress_records.get('records', [])
+                    
+                    # Get topic counts for the test explicitly
+                    topic_counts = get_topic_counts(subject_name, test['id'])
+                    test['topic_counts'] = topic_counts
+                    
+                    # Process each topic to include completion data
+                    if isinstance(test.get('topics'), list):
+                        for topic in test.get('topics', []):
+                            if isinstance(topic, dict) and 'resources' in topic:
+                                for resource in topic.get('resources', []):
+                                    # Count completed resources
+                                    resource['completed'] = len([r for r in test['records'] 
+                                                                if r.get('resource_id') == resource.get('id')])
+
+                    # Compute date statistics - Sort dates and get unique dates
+                    unique_dates = set()
+                    for record in test['records']:
+                        record_date = record.get('date')
+                        if record_date:
+                            unique_dates.add(record_date)
+                    
+                    test['unique_dates'] = sorted(list(unique_dates))
+                    
+                    # Create date_counts dictionary for the timeline
+                    date_counts = {}
+                    for record in test['records']:
+                        record_date = record.get('date')
+                        if record_date:
+                            if record_date in date_counts:
+                                date_counts[record_date] += 1
+                            else:
+                                date_counts[record_date] = 1
+                    
+                    test['date_counts'] = date_counts
+                    
+                    # Calculate scores statistics if available
+                    scores = []
+                    for record in test['records']:
+                        if 'score' in record and record['score'] is not None:
+                            scores.append(record['score'])
+                    
+                    test['scores'] = scores
+                    test['avg_score'] = sum(scores) / len(scores) if scores else 0
+                    
+                    past_tests.append(test)
+    
+    # Sort tests by date (most recent first)
+    if past_tests:
+        past_tests = sorted(past_tests,
+                            key=lambda x: datetime.strptime(x['date'], '%Y-%m-%d'),
+                            reverse=True)
+    
+    return render_template('past_tests.html', past_tests=past_tests)
+
+
+# === Email Notification Routes ===
+
+@app.route('/send-test-reminder/<subject_name>/<test_id>', methods=['POST'])
+def send_test_reminder(subject_name, test_id):
+    """Send a test reminder email"""
+    # Load subject details
+    subject_data = load_subject_details(subject_name)
+
+    # Find the test
+    test = next((t for t in subject_data.get('tests', []) if isinstance(t, dict) and t.get('id') == test_id), None)
+
+    if test:
+        # Calculate progress
+        progress = calculate_progress(test, subject_name)
+
+        # Send reminder email
+        send_test_reminder_email(subject_name, test['name'], test['date'], progress)
+
+        return redirect(url_for('track_progress', subject_name=subject_name, test_id=test_id))
+
+    flash('Test not found!', 'error')
+    return redirect(url_for('subject_details', subject_name=subject_name))
+
+
+@app.route('/send-progress-summary/<subject_name>/<test_id>', methods=['POST'])
+def send_progress_summary(subject_name, test_id):
+    """Send a progress summary email"""
+    # Load subject details
+    subject_data = load_subject_details(subject_name)
+
+    # Find the test
+    test = next((t for t in subject_data.get('tests', []) if isinstance(t, dict) and t.get('id') == test_id), None)
+
+    if test:
+        # Get today's resources
+        todays_resources = get_todays_resources(subject_name, test_id)
+
+        # Send progress email
+        if todays_resources:
+            send_daily_progress_email(subject_name, test['name'], todays_resources)
+            flash('Progress summary email sent!', 'success')
+        else:
+            flash('No progress recorded today!', 'error')
+
+        return redirect(url_for('track_progress', subject_name=subject_name, test_id=test_id))
+
+    flash('Test not found!', 'error')
+    return redirect(url_for('subject_details', subject_name=subject_name))
+
+
+@app.route('/check-upcoming-tests')
+def check_upcoming_tests():
+    """Check for upcoming tests and send reminders"""
+    upcoming_tests = get_upcoming_tests(days=7)
+
+    for test in upcoming_tests:
+        subject_name = test['subject_name']
+        test_date_obj = datetime.strptime(test['date'], '%Y-%m-%d').date()
+        today = date.today()
+        days_remaining = (test_date_obj - today).days
+
+        # Send reminder for tests that are 7, 3, or 1 day away
+        if days_remaining in [7, 3, 1]:
+            send_test_reminder_email(subject_name, test['name'], test['date'], test['progress'])
+
+    flash('Checked for upcoming tests and sent reminders!', 'success')
+    return redirect(url_for('index'))
+
+
+@app.route('/static/<path:filename>')
+def serve_static(filename):
+    """Serve static files"""
+    return send_from_directory(app.static_folder, filename)
+
+
+@app.route('/update-progress', methods=['POST'])
+def update_progress():
+    """Update progress for a resource (increment or decrement) with optional score"""
+    try:
+        data = request.get_json()
+        resource_id = data.get('resource_id')
+        change = data.get('change', 0)  # 1 for increment, -1 for decrement
+        score = data.get('score')  # Optional score (percentage)
+
+        # We need to find which subject and test this resource belongs to
+        subjects = load_subjects()
+        for subject_name in subjects:
+            subject_data = load_subject_details(subject_name)
+            for test in subject_data.get('tests', []):
+                if isinstance(test, dict) and 'topics' in test and 'id' in test:
+                    for topic in test.get('topics', []):
+                        if isinstance(topic, dict) and 'resources' in topic:
+                            for resource in topic.get('resources', []):
+                                if isinstance(resource, dict) and resource.get('id') == resource_id:
+                                    # Found the resource - now update progress
+                                    progress_data = load_progress_records(subject_name, test['id'])
+
+                                    # Get current completed count
+                                    completed = 0
+                                    for record in progress_data.get('records', []):
+                                        if record.get('resource_id') == resource_id:
+                                            completed += 1
+
+                                    # Calculate new completion count
+                                    total = resource.get('count', 1)
+                                    new_completed = completed + change
+
+                                    # Ensure completed count is within bounds
+                                    if new_completed < 0:
+                                        new_completed = 0
+                                    if new_completed > total:
+                                        new_completed = total
+
+                                    # If incrementing, add a new record
+                                    if change > 0 and new_completed > completed:
+                                        # Initialize records list if not exists
+                                        if 'records' not in progress_data:
+                                            progress_data['records'] = []
+
+                                        # Add record with timestamp
+                                        now = datetime.now()
+                                        record = {
+                                            'id': str(uuid.uuid4()),
+                                            'topic_id': topic['id'],
+                                            'topic_name': topic['name'],
+                                            'resource_id': resource_id,
+                                            'resource_name': resource['name'],
+                                            'notes': '',
+                                            'date': now.strftime('%Y-%m-%d'),
+                                            'timestamp': now.strftime('%Y-%m-%d %H:%M:%S')
+                                        }
+
+                                        # Add score if provided
+                                        if score is not None:
+                                            record['score'] = float(score)
+
+                                        progress_data['records'].append(record)
+
+                                    # If decrementing, remove the latest record
+                                    elif change < 0 and new_completed < completed:
+                                        # Find and remove the last record for this resource
+                                        for i in range(len(progress_data.get('records', [])) - 1, -1, -1):
+                                            if progress_data['records'][i].get('resource_id') == resource_id:
+                                                del progress_data['records'][i]
+                                                break
+
+                                    # Save progress records
+                                    save_progress_records(subject_name, test['id'], progress_data)
+
+                                    # Calculate new progress percentage
+                                    progress_percentage = calculate_progress(test, subject_name)
+
+                                    return jsonify({
+                                        'success': True,
+                                        'completed': new_completed,
+                                        'total': total,
+                                        'progress': progress_percentage
+                                    })
+
+        return jsonify({'success': False, 'message': 'Resource not found'}), 404
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@app.route('/send-reminder', methods=['POST'])
+def send_reminder():
+    """Send a study reminder email"""
+    try:
+        data = request.get_json()
+        subject = data.get('subject')
+        message = data.get('message')
+        recipient = data.get('recipient')
+
+        msg = Message(
+            subject=f'Study Reminder: {subject}',
+            sender=app.config['MAIL_USERNAME'],
+            recipients=[recipient]
+        )
+        msg.body = message
+        mail.send(msg)
+        
+        return jsonify({'success': True, 'message': 'Reminder sent successfully!'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/add-todo', methods=['POST'])
+def add_todo():
+    """Add a new task to the To-Do List."""
+    task_text = request.form.get('task_text', '').strip()
+    subject = request.form.get('subject', '').strip()
+
+    if not task_text or not subject:
+        return jsonify({'success': False, 'message': 'Task text and subject are required.'}), 400
+
+    # Initialize session data if not present
+    if 'todo_data' not in session:
+        session['todo_data'] = {'tasks': []}
+
+    # Add the new task
+    task_id = str(uuid.uuid4())
+    session['todo_data']['tasks'].append({
+        'id': task_id,
+        'text': task_text,
+        'subject': subject,
+        'completed': False
+    })
+    session.modified = True
+
+    return jsonify({'success': True, 'task_id': task_id, 'message': 'Task added successfully.'})
+
+@app.route('/toggle-todo/<task_id>', methods=['POST'])
+def toggle_todo(task_id):
+    """Toggle the completion status of a task."""
+    if 'todo_data' not in session:
+        return jsonify({'success': False, 'message': 'No tasks found.'}), 400
+
+    for task in session['todo_data']['tasks']:
+        if task['id'] == task_id:
+            task['completed'] = not task['completed']
+            session.modified = True
+            return jsonify({'success': True, 'completed': task['completed'], 'message': 'Task updated successfully.'})
+
+    return jsonify({'success': False, 'message': 'Task not found.'}), 404
+
+@app.context_processor
+def inject_todo_data():
+    """Inject To-Do List data into templates."""
+    return {'todo_data': session.get('todo_data', {'tasks': []})}
+
+@app.route('/subject/<subject_name>/delete_test/<test_id>', methods=['POST'])
+def delete_subject_test(subject_name, test_id):
+    """Delete a test from a subject"""
+    # Load existing details
+    details = load_subject_details(subject_name)
+
+    # Find and remove the test
+    if 'tests' in details:
+        details['tests'] = [test for test in details['tests'] if test.get('id') != test_id]
+
+    # Save updated details
+    save_subject_details(subject_name, details)
+
+    flash('Test deleted successfully!', 'success')
+    return redirect(url_for('subject_details', subject_name=subject_name))
+
+
+
 @app.route('/email-config')
 def email_config():
     """Show email configuration page"""
+    status, message = validate_email_config()
     email_settings = {
         'server': app.config['MAIL_SERVER'],
         'port': app.config['MAIL_PORT'],
         'use_tls': app.config['MAIL_USE_TLS'],
         'username': app.config['MAIL_USERNAME'],
-        'sender': app.config['MAIL_DEFAULT_SENDER']
+        'sender': app.config['MAIL_DEFAULT_SENDER'],
+        'status': status,
+        'message': message
     }
     return render_template('email_config.html', email_settings=email_settings)
+
+@app.route('/validate-email-config')
+def validate_email_configuration():
+    """Validate email configuration and return status"""
+    status, message = validate_email_config()
+    return jsonify({
+        'success': status,
+        'message': message
+    })
+
+@app.route('/send-test-email', methods=['POST'])
+def send_test_email():
+    """Send a test email to verify configuration"""
+    recipient = app.config['MAIL_USERNAME']
+    subject = "🐱 Test Email from Neko Study Quest"
+    
+    body = """
+    <html>
+    <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #f9f9f9;">
+        <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 20px; border-radius: 10px; border-top: 5px solid #6b58cd; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);">
+            <h1 style="color: #6b58cd;">Email Configuration Test</h1>
+            <p>Hello! This is a test email from your Neko Study Quest app.</p>
+            <div style="background-color: #f0f0f0; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                <h3 style="color: #66bb6a;">✅ Email configuration is working!</h3>
+                <p>If you're seeing this email, it means your email settings are configured correctly.</p>
+            </div>
+            <p>You can now receive:</p>
+            <ul style="color: #555;">
+                <li>Test reminders</li>
+                <li>Daily progress updates</li>
+                <li>Test completion notifications</li>
+                <li>Upcoming tests summaries</li>
+            </ul>
+            <p>Nya~ 😺</p>
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #999;">
+                <p>This is a test message from your Neko Study Quest app.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    try:
+        if send_email_with_retry(subject, [recipient], body):
+            return jsonify({
+                'success': True,
+                'message': 'Test email sent successfully! Please check your inbox.'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Failed to send test email. Please check your email configuration.'
+            })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Error sending test email: {str(e)}'
+        }), 500
 
 @app.route('/email-test')
 def email_test_page():
@@ -1725,32 +2128,8 @@ def email_test_page():
 
 @app.route('/email-dashboard')
 def email_dashboard():
-    """Show email dashboard with all email notification options"""
-    # Get upcoming tests for potential reminders
-    upcoming_tests = get_upcoming_tests(days=14)
-    
-    # Get subjects for sending emails about specific subjects
-    subjects = load_subjects()
-    
-    # For each subject, get the active tests
-    subject_tests = {}
-    for subject_name in subjects:
-        subject_data = load_subject_details(subject_name)
-        active_tests = []
-        
-        for test in subject_data.get('tests', []):
-            if isinstance(test, dict) and 'id' in test and 'date' in test:
-                if not is_past_test(test['date']):
-                    test['progress'] = calculate_progress(test, subject_name)
-                    active_tests.append(test)
-        
-        if active_tests:
-            subject_tests[subject_name] = active_tests
-    
-    return render_template('email_dashboard.html', 
-                          upcoming_tests=upcoming_tests,
-                          subjects=subjects,
-                          subject_tests=subject_tests)
+    """Show email dashboard"""
+    return render_template('email_dashboard.html')
 
 @app.route('/send-upcoming-summary', methods=['POST'])
 def send_upcoming_summary():
@@ -1867,62 +2246,33 @@ def send_test_complete_sample():
 
 @app.route('/send-custom-email', methods=['POST'])
 def send_custom_email():
-    """Send a custom email"""
-    subject = request.form.get('subject')
-    body = request.form.get('body')
-    recipient = app.config['MAIL_USERNAME']  # Send to yourself
-    
-    msg = Message(subject=subject, recipients=[recipient], html=f"<html><body>{body}</body></html>")
-    mail.send(msg)
-    
-    flash('Custom email sent successfully!', 'success')
-    return redirect(url_for('email_test_page'))
-
-@app.route('/send-test-reminder-email-choice', methods=['POST'])
-def send_test_reminder_email_choice():
-    """Send a test reminder email for a selected test"""
-    test_choice = request.form.get('test_choice', '')
-    
-    # Split the value (format: "subject_name|test_id")
-    if '|' in test_choice:
-        subject_name, test_id = test_choice.split('|', 1)
-        
-        # Load subject details
-        subject_data = load_subject_details(subject_name)
-        
-        # Find the test
-        test = next((t for t in subject_data.get('tests', []) 
-                     if isinstance(t, dict) and t.get('id') == test_id), None)
-        
-        if test:
-            # Calculate progress
-            progress = calculate_progress(test, subject_name)
-            
-            # Send reminder email
-            send_test_reminder_email(subject_name, test['name'], test['date'], progress)
-            
-            flash(f"Reminder email sent for {test['name']}!", "success")
-            return redirect(url_for('email_dashboard'))
-    
-    flash("Invalid test selection or test not found!", "error")
+    """Send a custom email to test email functionality"""
+    try:
+        subject = request.form.get('subject', 'Test Email')
+        body = request.form.get('body', 'This is a test email.')
+        send_email_with_retry(subject, [app.config['EMAIL_USERNAME']], body)
+        flash('Custom email sent successfully!', 'success')
+    except Exception as e:
+        flash(f'Failed to send custom email: {str(e)}', 'error')
     return redirect(url_for('email_dashboard'))
+
+@app.template_filter('today')
+def today():
+    """Return today's date as a datetime object for use in templates"""
+    return datetime.now().date()
 
 if __name__ == '__main__':
     try:
+        ensure_file_structure()
         print("Starting Neko Study Quest...")
-        print(f"Ensuring file structure... {'Success' if ensure_file_structure() else 'Failed'}")
+        print("Ensuring file structure... Success")
         
-        # Check if email configuration is valid
-        if not app.config['MAIL_USERNAME'] or not app.config['MAIL_PASSWORD']:
-            print("WARNING: Email configuration is incomplete or invalid.")
-            print("Some features may not work properly.")
-            print("Please check your .env file and ensure MAIL_USERNAME and MAIL_PASSWORD are set correctly.")
-        else:
+        # Configure email
+        if app.config['MAIL_USERNAME']:
             print(f"Email configured for: {app.config['MAIL_USERNAME']}")
         
         print("Starting server...")
         app.run(debug=True)
     except Exception as e:
         print(f"Error starting application: {str(e)}")
-        import traceback
-        traceback.print_exc()
+

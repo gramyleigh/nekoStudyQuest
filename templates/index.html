@@ -255,12 +255,23 @@
             background-size: contain;
         }
 
-        .widget-title.streak::before {
+        .widget-title.calendar::before {
             content: "";
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23546079' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5'%3E%3C/path%3E%3Cpath d='M9 18h6'%3E%3C/path%3E%3Cpath d='M10 22h4'%3E%3C/path%3E%3C/svg%3E");
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23546079' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='2' ry='2'%3E%3C/rect%3E%3Cline x1='16' y1='2' x2='16' y2='6'%3E%3C/line%3E%3Cline x1='8' y1='2' x2='8' y2='6'%3E%3C/line%3E%3Cline x1='3' y1='10' x2='21' y2='10'%3E%3C/line%3E%3C/svg%3E");
             display: inline-block;
             width: 22px;
             height: 22px;
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: contain;
+        }
+
+        .widget-title.streak::before {
+            content: "";
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23546079' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 21c-3.5 0-6-2.5-6-6 0-3 4-10 6-10 2 0 6 7 6 10 0 3.5-2.5 6-6 6z'%3E%3C/path%3E%3Cpath d='M12 21c-1.5 0-3-1-3-3 0-1.5 2-5 3-5 1 0 3 3.5 3 5 0 2-1.5 3-3 3z'%3E%3C/path%3E%3C/svg%3E");
+            display: inline-block;
+            width: 30px;
+            height: 30px;
             background-repeat: no-repeat;
             background-position: center;
             background-size: contain;
@@ -283,6 +294,44 @@
             padding: 3px;
             font-family: 'Comic Neue', cursive;
             font-size: 0.9rem;
+        }
+
+        /* Action buttons styling */
+        .widget-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            background-color: rgba(255, 255, 255, 0.8);
+            color: var(--dark);
+            border: none;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .action-btn:hover {
+            background-color: var(--primary-light);
+            transform: rotate(10deg) scale(1.1);
+        }
+
+        .add-btn {
+            color: var(--success);
+        }
+
+        .add-btn:hover {
+            background-color: rgba(168, 225, 209, 0.3);
+        }
+
+        .edit-btn {
+            color: var(--secondary-dark);
         }
 
         /* Subject Widget */
@@ -342,49 +391,64 @@
             color: var(--dark);
         }
 
-        .edit-btn {
-            background-color: rgba(255, 255, 255, 0.8);
-            color: var(--dark);
+        /* Delete button styling */
+        .delete-subject-btn {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
             border: none;
+            opacity: 0; /* Hidden by default */
+            transition: opacity 0.2s ease, transform 0.2s ease, background-color 0.2s ease;
+            color: var(--primary); /* Changed from danger to primary */
+            padding: 5px;
             border-radius: 50%;
-            width: 32px;
-            height: 32px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.1rem;
             cursor: pointer;
-            transition: all 0.2s ease;
+            z-index: 10;
         }
 
-        .edit-btn:hover {
-            background-color: var(--primary-light);
-            transform: rotate(10deg);
+        .subject-card:hover .delete-subject-btn {
+            opacity: 1; /* Show on hover */
         }
 
-        .add-subject-btn {
-            display: block;
-            width: 97%;
-            padding: 12px;
-            background-color: var(--secondary);
+        .delete-subject-btn:hover {
+            transform: translateY(-50%) scale(1.2);
+            background-color: rgba(184, 164, 244, 0.2); /* Changed background color to match primary */
+            color: var(--primary-dark); /* Darker color on hover */
+        }
+        
+        /* Edit subject button */
+        .edit-subject-btn {
+            position: absolute;
+            right: 45px; /* Position next to delete button */
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
             border: none;
-            border-radius: 10px;
-            text-align: center;
-            font-family: 'Comic Neue', cursive;
-            font-weight: bold;
-            font-size: 1rem;
-            margin-top: 15px;
+            opacity: 0; /* Hidden by default */
+            transition: opacity 0.2s ease, transform 0.2s ease, background-color 0.2s ease;
+            color: var(--secondary); /* Using secondary color to distinguish from delete */
+            padding: 5px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            color: white;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            z-index: 10;
         }
 
-        .add-subject-btn:hover {
-            background-color: var(--secondary-dark);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        .subject-card:hover .edit-subject-btn {
+            opacity: 1; /* Show on hover */
+        }
+
+        .edit-subject-btn:hover {
+            transform: translateY(-50%) scale(1.2);
+            background-color: rgba(146, 193, 255, 0.2); /* Background color that matches secondary */
+            color: var(--secondary-dark); /* Darker color on hover */
         }
 
         /* Empty State Styles */
@@ -752,6 +816,192 @@
             text-align: center;
         }
 
+        /* Modal styling */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+            animation: fadeIn 0.3s;
+            backdrop-filter: blur(3px);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background: linear-gradient(145deg, var(--light) 0%, #f5f7ff 100%);
+            margin: 10% auto;
+            padding: 30px;
+            border: none;
+            width: 350px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(146, 193, 255, 0.3), 
+                        0 0 0 3px rgba(184, 164, 244, 0.2);
+            text-align: center;
+            font-family: 'Comic Neue', cursive;
+            animation: slideDown 0.4s ease-out;
+            position: relative;
+        }
+
+        @keyframes slideDown {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary-dark);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+
+        .close-modal:hover {
+            color: var(--primary);
+            background-color: rgba(184, 164, 244, 0.1);
+            transform: scale(1.2);
+        }
+
+        .modal h3 {
+            font-family: 'Bangers', cursive;
+            color: var(--primary-dark);
+            font-size: 2rem;
+            margin-bottom: 20px;
+            letter-spacing: 1px;
+            position: relative;
+            display: inline-block;
+        }
+
+        .modal h3:after {
+            content: "";
+            position: absolute;
+            bottom: -8px;
+            left: 10%;
+            right: 10%;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--secondary), transparent);
+            border-radius: 3px;
+        }
+
+        .modal-input-container {
+            margin: 25px auto;
+            width: 85%;
+            max-width: 280px;
+            position: relative;
+        }
+
+        .modal-input-container input {
+            width: 100%;
+            padding: 14px 20px;
+            border: 2px solid var(--primary-light);
+            border-radius: 15px;
+            font-family: 'Comic Neue', cursive;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            box-sizing: border-box; /* Ensure padding is included in width calculation */
+            box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+            background-color: rgba(255, 255, 255, 0.7);
+        }
+
+        .modal-input-container input:focus {
+            outline: none;
+            border-color: var(--secondary);
+            background-color: white;
+            box-shadow: 0 5px 15px rgba(146, 193, 255, 0.2);
+        }
+
+        .modal-input-container::before {
+            content: "";
+            /* Removed the emoji that was here */
+        }
+
+        .modal-buttons {
+            display: flex;
+            justify-content: center;
+            margin-top: 25px;
+        }
+
+        .modal-btn {
+            padding: 12px 28px;
+            border-radius: 15px;
+            border: none;
+            font-family: 'Comic Neue', cursive;
+            font-weight: bold;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background-color: var(--secondary);
+            color: white;
+            box-shadow: 0 4px 10px rgba(146, 193, 255, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .modal-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 15px rgba(146, 193, 255, 0.4);
+        }
+
+        .modal-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 5px rgba(146, 193, 255, 0.3);
+        }
+
+        .modal-btn::after {
+            content: "";
+            position: absolute;
+            top: -50%;
+            left: -60%;
+            width: 200%;
+            height: 200%;
+            background: rgba(255, 255, 255, 0.1);
+            transform: rotate(30deg);
+            transition: all 0.5s ease;
+        }
+
+        .modal-btn:hover::after {
+            transform: rotate(30deg) translateX(30%);
+        }
+
+        .modal-btn-add {
+            background: linear-gradient(135deg, var(--secondary) 0%, var(--primary) 100%);
+        }
+        
+        .modal-icon {
+            margin: 10px 0 15px;
+            animation: bounce 2s infinite;
+            color: var(--primary);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-icon svg {
+            filter: drop-shadow(0 2px 4px rgba(146, 193, 255, 0.3));
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
         /* Responsive design */
         @media (max-width: 992px) {
             .dashboard-grid {
@@ -801,71 +1051,6 @@
             .study-stats-container {
                 grid-template-columns: 1fr;
             }
-
-            /* Ensure the subject card is positioned relative */
-.subject-card {
-  position: relative;
-}
-
-/* Edit button hidden by default */
-.edit-subject-btn {
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: rgba(255, 255, 255, 0.8);
-  border: none;
-  border-radius: 50%;
-  width: 32px;
-  height: 32px;
-  display: none;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-/* Change appearance on hover of button */
-.edit-subject-btn:hover {
-  background-color: var(--primary-light);
-  transform: rotate(10deg);
-}
-
-/* Show button when the subject card is hovered */
-.subject-card:hover .edit-subject-btn {
-  display: block;
-}
-
-/* Modal overlay */
-.modal {
-  display: none; /* Hidden by default */
-  position: fixed;
-  z-index: 100; /* Above other elements */
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  overflow: auto;
-  background-color: rgba(0,0,0,0.4); /* Black with opacity */
-}
-
-/* Modal content box */
-.modal-content {
-  background-color: var(--light);
-  margin: 15% auto;
-  padding: 20px;
-  border: 1px solid var(--primary-light);
-  width: 300px;
-  border-radius: 10px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-}
-
-/* Close button inside modal */
-.modal-content .close {
-  color: var(--dark);
-  float: right;
-  font-size: 1.5rem;
-  cursor: pointer;
-}
-
         }
     </style>
 </head>
@@ -894,18 +1079,66 @@
             </div>
         </div>
 
+        <!-- Add Subject Modal -->
+        <div id="addSubjectModal" class="modal">
+            <div class="modal-content">
+                <span class="close-modal" onclick="closeAddSubjectModal()">&times;</span>
+                <h3>Add New Subject</h3>
+                <div class="modal-icon">
+                    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                    </svg>
+                </div>
+                <form id="addSubjectForm" method="POST" action="{{ url_for('add_subject') }}">
+                    <div class="modal-input-container">
+                        <input type="text" id="subjectNameInput" name="subject_name" placeholder="Enter subject name..." required>
+                    </div>
+                    <div class="modal-buttons">
+                        <button type="submit" class="modal-btn modal-btn-add">Add Subject</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Edit Subject Modal -->
+        <div id="editSubjectModal" class="modal">
+            <div class="modal-content">
+                <span class="close-modal" onclick="closeEditSubjectModal()">&times;</span>
+                <h3>Edit Subject</h3>
+                <div class="modal-icon">
+                    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 20h9"></path>
+                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                    </svg>
+                </div>
+                <form id="editSubjectForm" method="POST" action="{{ url_for('edit_subject_name') }}">
+                    <input type="hidden" id="originalSubjectName" name="original_subject_name">
+                    <div class="modal-input-container">
+                        <input type="text" id="editSubjectNameInput" name="new_subject_name" placeholder="Enter new name..." required>
+                    </div>
+                    <div class="modal-buttons">
+                        <button type="submit" class="modal-btn modal-btn-add">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
         <!-- Dashboard Grid -->
         <div class="dashboard-grid">
             <!-- Subjects Widget -->
             <div class="widget subjects-widget">
                 <div class="widget-header">
                     <h2 class="widget-title subjects">Subjects</h2>
-                    <a href="{{ url_for('edit_subjects') }}" class="edit-btn">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 20h9"></path>
-                            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
-                        </svg>
-                    </a>
+                    <div class="widget-actions">
+                        <!-- Add Subject Button -->
+                        <button class="action-btn add-btn" onclick="openAddSubjectModal()">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
                 <div class="subject-list">
                     {% if subjects %}
@@ -943,17 +1176,26 @@
                                 <div class="subject-info">
                                     <div class="subject-name">{{ subject }}</div>
                                     <div class="subject-tests">Click to view details</div>
-
-                                    <!-- Count upcoming tests for this subject -->
-                                    {% set upcoming_test_count = 0 %}
-                                    {% for test in all_tests %}
-                                        {% if test.subject_name == subject and not test.is_past %}
-                                            {% set upcoming_test_count = upcoming_test_count + 1 %}
-                                        {% endif %}
-                                    {% endfor %}
-
-
                                 </div>
+                                
+                                <!-- Delete Subject Button -->
+                                <form method="POST" action="{{ url_for('delete_subject') }}" style="display:inline;">
+                                    <input type="hidden" name="subject_name" value="{{ subject }}">
+                                    <button type="submit" class="delete-subject-btn" onclick="event.preventDefault(); event.stopPropagation(); this.closest('form').submit();">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="3 6 5 6 21 6"></polyline>
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                        </svg>
+                                    </button>
+                                </form>
+                                
+                                <!-- Edit Subject Button -->
+                                <button type="button" class="edit-subject-btn" onclick="event.preventDefault(); event.stopPropagation(); openEditSubjectModal('{{ subject }}');">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M12 20h9"></path>
+                                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                                    </svg>
+                                </button>
                             </a>
                         {% endfor %}
                     {% else %}
@@ -968,7 +1210,7 @@
                         </div>
                     {% endif %}
                 </div>
-                <a href="{{ url_for('edit_subjects') }}" class="add-subject-btn">+ Add New Subject</a>
+                <!-- We don't need this button anymore since we have the + button in the header -->
             </div>
 
             <!-- Study Stats Widget - Small -->
@@ -989,18 +1231,17 @@
                     </div>
                     <div class="stat-item">
                         <div class="stat-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#9687db" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"></path>
-                                <path d="M9 18h6"></path>
-                                <path d="M10 22h4"></path>
-                            </svg>
+                            <svg class="icon-flame" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ffb3c0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 21c-3.5 0-6-2.5-6-6 0-3 4-10 6-10 2 0 6 7 6 10 0 3.5-2.5 6-6 6z"></path>
+                                <path d="M12 21c-1.5 0-3-1-3-3 0-1.5 2-5 3-5 1 0 3 3.5 3 5 0 2-1.5 3-3 3z"></path>
+                              </svg>
                         </div>
                         <div class="stat-value">{{ stats_summary.current_streak if stats_summary and stats_summary.current_streak is defined else 0 }}</div>
                         <div class="stat-label">Day Streak</div>
                     </div>
                     <div class="stat-item">
                         <div class="stat-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffb3c0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#a8e1d1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline>
                                 <polyline points="16 7 22 7 22 13"></polyline>
                             </svg>
@@ -1010,7 +1251,7 @@
                     </div>
                     <div class="stat-item">
                         <div class="stat-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#a8e1d1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#9687db" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
                                 <line x1="16" y1="2" x2="16" y2="6"></line>
                                 <line x1="8" y1="2" x2="8" y2="6"></line>
@@ -1026,7 +1267,7 @@
             <!-- Current Tests Widget -->
             <div class="widget current-tests-widget">
                 <div class="widget-header">
-                    <h2 class="widget-title">Current Tests</h2>
+                    <h2 class="widget-title calendar">Current Tests</h2>
                 </div>
                 <div class="current-test-list">
                     {% set upcoming_tests = [] %}
@@ -1356,33 +1597,249 @@
                 });
             {% endif %}
 
-            // Toggle todo completion
-            window.toggleTodo = function(taskId) {
-                fetch(`/toggle-todo/${taskId}`, {
-                    method: 'POST'
+            // Subject management functionality
+            // Function to open the add subject modal
+            window.openAddSubjectModal = function() {
+                document.getElementById('addSubjectModal').style.display = 'block';
+                document.getElementById('subjectNameInput').focus();
+            }
+            
+            // Function to close the add subject modal
+            window.closeAddSubjectModal = function() {
+                document.getElementById('addSubjectModal').style.display = 'none';
+            }
+            
+            // Function to open the edit subject modal
+            window.openEditSubjectModal = function(subjectName) {
+                document.getElementById('originalSubjectName').value = subjectName;
+                document.getElementById('editSubjectNameInput').value = subjectName;
+                document.getElementById('editSubjectModal').style.display = 'block';
+                document.getElementById('editSubjectNameInput').focus();
+                document.getElementById('editSubjectNameInput').select(); // Select all text for easy editing
+            }
+            
+            // Function to close the edit subject modal
+            window.closeEditSubjectModal = function() {
+                document.getElementById('editSubjectModal').style.display = 'none';
+            }
+            
+            // Handle click outside the modals to close them
+            window.addEventListener('click', function(event) {
+                const addModal = document.getElementById('addSubjectModal');
+                const editModal = document.getElementById('editSubjectModal');
+                
+                if (event.target === addModal) {
+                    closeAddSubjectModal();
+                }
+                
+                if (event.target === editModal) {
+                    closeEditSubjectModal();
+                }
+            });
+            
+            // Handle add subject form submission
+            document.getElementById('addSubjectForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const subjectName = document.getElementById('subjectNameInput').value.trim();
+                if (!subjectName) return;
+                
+                // Create FormData object
+                const formData = new FormData(this);
+                
+                // Send AJAX request
+                fetch('{{ url_for("add_subject") }}', {
+                    method: 'POST',
+                    body: formData
                 })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        const todoItem = document.querySelector(`.todo-item[data-id="${taskId}"]`);
-                        const todoCheckbox = todoItem.querySelector('.todo-checkbox');
-                        const todoText = todoItem.querySelector('.todo-text');
-
-                        if (data.completed) {
-                            todoCheckbox.classList.add('checked');
-                            todoText.classList.add('completed');
-                        } else {
-                            todoCheckbox.classList.remove('checked');
-                            todoText.classList.remove('completed');
-                        }
+                .then(response => {
+                    if (response.redirected) {
+                        // If redirected, reload the page to see the new subject
+                        window.location.href = response.url;
                     } else {
-                        alert(data.message);
+                        return response.json();
+                    }
+                })
+                .then(data => {
+                    // If we got JSON data back (not redirected)
+                    if (data) {
+                        if (data.success) {
+                            // Add the new subject to the list without page reload
+                            addSubjectToList(data.subject);
+                            closeAddSubjectModal();
+                        } else {
+                            alert(data.message || 'Error adding subject');
+                        }
                     }
                 })
                 .catch(error => {
-                    console.error('Error toggling todo:', error);
+                    console.error('Error:', error);
                 });
-            };
+            });
+            
+            // Handle edit subject form submission
+            document.getElementById('editSubjectForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const originalSubject = document.getElementById('originalSubjectName').value.trim();
+                const newSubject = document.getElementById('editSubjectNameInput').value.trim();
+                
+                if (!newSubject || originalSubject === newSubject) {
+                    closeEditSubjectModal();
+                    return;
+                }
+                
+                // Create FormData object
+                const formData = new FormData(this);
+                
+                // Send AJAX request
+                fetch('{{ url_for("edit_subject_name") }}', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if (response.redirected) {
+                        // If redirected, reload the page to see changes
+                        window.location.href = response.url;
+                    } else {
+                        return response.json();
+                    }
+                })
+                .then(data => {
+                    // If we got JSON data back (not redirected)
+                    if (data) {
+                        if (data.success) {
+                            // Update the subject in the list without page reload
+                            updateSubjectInList(originalSubject, data.subject);
+                            closeEditSubjectModal();
+                        } else {
+                            alert(data.message || 'Error editing subject');
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            });
+            
+            // Function to add a new subject to the list without page reload
+            function addSubjectToList(subject) {
+                const subjectList = document.querySelector('.subject-list');
+                
+                // Create new subject card
+                const subjectCard = document.createElement('a');
+                subjectCard.href = `/subject/${subject}`;
+                subjectCard.className = 'subject-card';
+                
+                // Random subject icon (simplified for this example)
+                const iconIndex = Math.floor(Math.random() * 4) + 1;
+                let iconSvg = '';
+                
+                if (iconIndex === 1) {
+                    iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#92c1ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                    </svg>`;
+                } else {
+                    iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#92c1ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>`;
+                }
+                
+                // Create the subject card content
+                subjectCard.innerHTML = `
+                    <div class="subject-icon">
+                        ${iconSvg}
+                    </div>
+                    <div class="subject-info">
+                        <div class="subject-name">${subject}</div>
+                        <div class="subject-tests">Click to view details</div>
+                    </div>
+                    
+                    <!-- Delete Subject Button -->
+                    <form method="POST" action="{{ url_for('delete_subject') }}" style="display:inline;">
+                        <input type="hidden" name="subject_name" value="${subject}">
+                        <button type="submit" class="delete-subject-btn" onclick="event.preventDefault(); event.stopPropagation(); this.closest('form').submit();">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            </svg>
+                        </button>
+                    </form>
+                    
+                    <!-- Edit Subject Button -->
+                    <button type="button" class="edit-subject-btn" onclick="event.preventDefault(); event.stopPropagation(); openEditSubjectModal('${subject}');">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 20h9"></path>
+                            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                        </svg>
+                    </button>
+                `;
+                
+                // Remove empty state if it exists
+                const emptyState = subjectList.querySelector('.empty-state');
+                if (emptyState) {
+                    emptyState.remove();
+                }
+                
+                // Add the new subject card to the list
+                subjectList.appendChild(subjectCard);
+                
+                // Clear the form
+                document.getElementById('subjectNameInput').value = '';
+            }
+            
+            // Function to update a subject in the list without page reload
+            function updateSubjectInList(originalSubject, newSubject) {
+                // Find the subject card
+                const subjectCards = document.querySelectorAll('.subject-card');
+                let subjectCard = null;
+                
+                for (let card of subjectCards) {
+                    const nameElement = card.querySelector('.subject-name');
+                    if (nameElement && nameElement.textContent === originalSubject) {
+                        subjectCard = card;
+                        break;
+                    }
+                }
+                
+                if (subjectCard) {
+                    // Update the subject name
+                    const nameElement = subjectCard.querySelector('.subject-name');
+                    if (nameElement) {
+                        nameElement.textContent = newSubject;
+                    }
+                    
+                    // Update the href
+                    subjectCard.href = `/subject/${newSubject}`;
+                    
+                    // Update the delete form
+                    const deleteForm = subjectCard.querySelector('form');
+                    if (deleteForm) {
+                        const input = deleteForm.querySelector('input[name="subject_name"]');
+                        if (input) {
+                            input.value = newSubject;
+                        }
+                    }
+                    
+                    // Update the edit button
+                    const editButton = subjectCard.querySelector('.edit-subject-btn');
+                    if (editButton) {
+                        editButton.onclick = function(event) {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            openEditSubjectModal(newSubject);
+                        };
+                    }
+                } else {
+                    // If we couldn't find the card, reload the page
+                    window.location.reload();
+                }
+            }
         });
     </script>
 </body>

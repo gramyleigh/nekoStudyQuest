@@ -15,13 +15,6 @@
 {% endblock %}
 
 {% block content %}
-{# Initialize variables to prevent errors with null values #}
-{% set resources = resources|default([]) %}
-{% set tests = tests|default([]) %}
-{% set total_resources = total_resources|default(0) %}
-{% set completed_resources = completed_resources|default(0) %}
-{% set progress_percentage = progress_percentage|default(0) %}
-
 <div class="dashboard-grid">
     <!-- Progress Widget - Left Side -->
     <div class="widget progress-widget">
@@ -61,8 +54,8 @@
                                         <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                                     </svg>
                                 </button>
-                                <form action="{{ url_for('delete_subject_test', subject_name=subject_name, test_id=test.id) }}" method="post" style="display: inline;">
-                                    <button type="submit" class="action-icon" onclick="event.stopPropagation(); return confirm('Are you sure you want to delete this test?');">
+                                <form action="{{ url_for('delete_subject_test', subject_name=subject_name, test_id=test.id) }}" method="post" style="display: inline;" class="delete-test-form">
+                                    <button type="submit" class="action-icon" onclick="event.stopPropagation();">
                                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                             <polyline points="3 6 5 6 21 6"></polyline>
                                             <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
@@ -102,7 +95,7 @@
 
                     <!-- Add Topic Form -->
                     <div class="inline-form">
-                        <form action="{{ url_for('add_test_topic', subject_name=subject_name, test_id=test.id) }}" method="post">
+                        <form id="add-topic-form-{{ test.id }}" action="{{ url_for('add_test_topic', subject_name=subject_name, test_id=test.id) }}" method="post" class="add-topic-form">
                             <div class="form-row">
                                 <input type="text" name="topic_name" placeholder="Add new topic..." required class="form-control">
                                 <button type="submit" class="btn btn-add">Add Topic</button>
@@ -111,10 +104,10 @@
                     </div>
 
                     <!-- Topics List -->
-                    <div class="topics-list">
+                    <div class="topics-list" id="topics-list-{{ test.id }}">
                         {% if test.topics and test.topics|length > 0 %}
                             {% for topic in test.topics %}
-                                <div class="topic-card">
+                                <div class="topic-card" id="topic-card-{{ topic.id }}">
                                     <div class="topic-header">
                                         <div class="topic-name" id="topic-name-{{ topic.id }}">{{ topic.name }}</div>
                                         <div class="topic-actions">
@@ -124,8 +117,8 @@
                                                     <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                                                 </svg>
                                             </button>
-                                            <form action="{{ url_for('delete_test_topic', subject_name=subject_name, test_id=test.id, topic_id=topic.id) }}" method="post" style="display: inline;">
-                                                <button type="submit" class="action-icon" onclick="event.stopPropagation(); return confirm('Are you sure you want to delete this topic?');">
+                                            <form action="{{ url_for('delete_test_topic', subject_name=subject_name, test_id=test.id, topic_id=topic.id) }}" method="post" style="display: inline;" class="delete-topic-form">
+                                                <button type="submit" class="action-icon" onclick="event.stopPropagation();">
                                                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                                         <polyline points="3 6 5 6 21 6"></polyline>
                                                         <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
@@ -137,7 +130,7 @@
 
                                     <!-- Add Resource Form -->
                                     <div class="resource-form">
-                                        <form action="{{ url_for('add_topic_resource', subject_name=subject_name, test_id=test.id, topic_id=topic.id) }}" method="post">
+                                        <form action="{{ url_for('add_topic_resource', subject_name=subject_name, test_id=test.id, topic_id=topic.id) }}" method="post" class="add-resource-form">
                                             <div class="form-row resource-add-row">
                                                 <input type="text" name="resource_name" placeholder="Add resource..." required class="form-control">
                                                 <div class="repeat-counter">
@@ -150,10 +143,10 @@
                                     </div>
 
                                     <!-- Resources List -->
-                                    <div class="resources-list">
+                                    <div class="resources-list" id="resources-list-{{ topic.id }}">
                                         {% if topic.resources and topic.resources|length > 0 %}
                                             {% for resource in topic.resources %}
-                                                <div class="resource-card">
+                                                <div class="resource-card" id="resource-card-{{ resource.id }}">
                                                     <div class="resource-info">
                                                         <span class="resource-name" id="resource-name-{{ resource.id }}">{{ resource.name }}</span>
                                                         <span class="resource-counter">× {{ resource.count }}</span>
@@ -168,8 +161,8 @@
                                                                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                                                             </svg>
                                                         </button>
-                                                        <form action="{{ url_for('delete_topic_resource', subject_name=subject_name, test_id=test.id, topic_id=topic.id, resource_id=resource.id) }}" method="post" style="display: inline;">
-                                                            <button type="submit" class="action-icon" onclick="event.stopPropagation(); return confirm('Are you sure you want to delete this resource?');">
+                                                        <form action="{{ url_for('delete_topic_resource', subject_name=subject_name, test_id=test.id, topic_id=topic.id, resource_id=resource.id) }}" method="post" style="display: inline;" class="delete-resource-form">
+                                                            <button type="submit" class="action-icon" onclick="event.stopPropagation();">
                                                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                                                     <polyline points="3 6 5 6 21 6"></polyline>
                                                                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
@@ -186,7 +179,7 @@
                                 </div>
                             {% endfor %}
                         {% else %}
-                            <div class="empty-topic-message">No topics yet. Add a topic above to get started!</div>
+                            <div class="empty-topic-message" id="empty-topics-{{ test.id }}">No topics yet. Add a topic above to get started!</div>
                         {% endif %}
                     </div>
                 </div>
@@ -212,15 +205,15 @@
 
                     {% if test.topics and test.topics|length > 0 %}
                         {% for topic in test.topics %}
-                            <div class="topic-completion-card">
+                            <div class="topic-completion-card" id="completion-topic-{{ topic.id }}">
                                 <div class="topic-header">
                                     <div class="topic-name">{{ topic.name }}</div>
                                 </div>
 
                                 {% if topic.resources and topic.resources|length > 0 %}
-                                    <div class="resources-progress-list">
+                                    <div class="resources-progress-list" id="progress-list-{{ topic.id }}">
                                         {% for resource in topic.resources %}
-                                            <div class="resource-progress-item" data-resource-id="{{ resource.id }}">
+                                            <div class="resource-progress-item" data-resource-id="{{ resource.id }}" id="progress-item-{{ resource.id }}">
                                                 <div class="resource-info">
                                                     <span class="resource-name">{{ resource.name }}</span>
                                                     <span class="resource-count">({{ resource.completed if resource.completed is defined else 0 }}/{{ resource.count }})</span>
@@ -966,6 +959,32 @@
         z-index: 1;
     }
 
+    /* Alert styling */
+    .alert {
+        padding: 15px;
+        margin-bottom: 15px;
+        border-radius: 10px;
+        border-left: 5px solid;
+        animation: fadeIn 0.5s;
+    }
+
+    .alert-success {
+        background-color: rgba(168, 225, 209, 0.2);
+        border-color: var(--success);
+        color: var(--dark);
+    }
+
+    .alert-error {
+        background-color: rgba(255, 179, 192, 0.2);
+        border-color: var(--danger);
+        color: var(--dark);
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
     /* Responsive design */
     @media (max-width: 992px) {
         .dashboard-grid {
@@ -1088,6 +1107,155 @@
             }
         }
 
+        // Handle Add Test form submission
+        const addTestForm = document.getElementById('add-test-form');
+        if (addTestForm) {
+            addTestForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Show loading indicator
+                const submitButton = this.querySelector('button[type="submit"]');
+                const originalButtonText = submitButton.innerHTML;
+                submitButton.innerHTML = 'Adding...';
+                submitButton.disabled = true;
+                
+                submitFormWithAjax(this, function(data) {
+                    // Reset button state
+                    submitButton.innerHTML = originalButtonText;
+                    submitButton.disabled = false;
+                    
+                    if (data.success) {
+                        console.log("Test added successfully, creating UI elements...");
+                        // Create and add the new test card
+                        addTestToUI(data.test);
+                        // Reset the form
+                        addTestForm.reset();
+                        // Set today's date as default again
+                        addTestForm.querySelector('input[type="date"]').value = today;
+                        // Show success message
+                        showFlashMessage(data.message, 'success');
+                    } else {
+                        showFlashMessage(data.message, 'error');
+                    }
+                });
+            });
+        }
+
+        // Handle Add Topic form submissions
+        document.querySelectorAll('.add-topic-form').forEach(form => {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const testId = this.id.replace('add-topic-form-', '');
+                
+                submitFormWithAjax(this, function(data) {
+                    if (data.success) {
+                        // Add new topic to UI
+                        addTopicToUI(testId, data.topic);
+                        // Reset form
+                        form.reset();
+                        // Show success message
+                        showFlashMessage(data.message, 'success');
+                        // Make sure the test is selected (should already be, but just in case)
+                        selectTest(testId);
+                    } else {
+                        showFlashMessage(data.message, 'error');
+                    }
+                });
+            });
+        });
+
+        // Handle Add Resource form submissions
+        document.querySelectorAll('.add-resource-form').forEach(form => {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const topicId = this.closest('.topic-card').id.replace('topic-card-', '');
+                const testId = this.action.split('/test/')[1].split('/')[0];
+                
+                submitFormWithAjax(this, function(data) {
+                    if (data.success) {
+                        // Add new resource to UI
+                        addResourceToUI(testId, topicId, data.resource);
+                        // Reset form
+                        form.reset();
+                        form.querySelector('input[name="resource_count"]').value = 1;
+                        // Show success message
+                        showFlashMessage(data.message, 'success');
+                        // Make sure the test is selected (should already be, but just in case)
+                        selectTest(testId);
+                    } else {
+                        showFlashMessage(data.message, 'error');
+                    }
+                });
+            });
+        });
+
+        // Handle Delete Test form submissions
+        document.querySelectorAll('.delete-test-form').forEach(form => {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                if (confirm('Are you sure you want to delete this test?')) {
+                    const testCard = this.closest('.test-card');
+                    const testId = testCard.id.replace('test-', '');
+                    
+                    submitFormWithAjax(this, function() {
+                        // Remove test from UI
+                        testCard.remove();
+                        
+                        // Remove associated topic sections
+                        document.querySelectorAll(`[id^="topics-for-test-${testId}"]`).forEach(el => el.remove());
+                        document.querySelectorAll(`[id^="resources-for-test-${testId}"]`).forEach(el => el.remove());
+                        
+                        // Show success message
+                        showFlashMessage('Test deleted successfully!', 'success');
+                    });
+                }
+            });
+        });
+
+        // Handle Delete Topic form submissions
+        document.querySelectorAll('.delete-topic-form').forEach(form => {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                if (confirm('Are you sure you want to delete this topic?')) {
+                    const topicCard = this.closest('.topic-card');
+                    const topicId = topicCard.id.replace('topic-card-', '');
+                    
+                    submitFormWithAjax(this, function() {
+                        // Remove topic from UI
+                        topicCard.remove();
+                        
+                        // Remove topic from completion widget
+                        document.getElementById(`completion-topic-${topicId}`)?.remove();
+                        
+                        // Show success message
+                        showFlashMessage('Topic deleted successfully!', 'success');
+                    });
+                }
+            });
+        });
+
+        // Handle Delete Resource form submissions
+        document.querySelectorAll('.delete-resource-form').forEach(form => {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                if (confirm('Are you sure you want to delete this resource?')) {
+                    const resourceCard = this.closest('.resource-card');
+                    const resourceId = resourceCard.id.replace('resource-card-', '');
+                    
+                    submitFormWithAjax(this, function() {
+                        // Remove resource from UI
+                        resourceCard.remove();
+                        
+                        // Remove resource from completion widget
+                        document.getElementById(`progress-item-${resourceId}`)?.remove();
+                        
+                        // Show success message
+                        showFlashMessage('Resource deleted successfully!', 'success');
+                    });
+                }
+            });
+        });
+
         // Set up edit forms submission
         setupEditFormHandlers();
     });
@@ -1100,7 +1268,8 @@
 
         // Find a suitable container to show the message
         const container = document.querySelector('.container') || document.body;
-        container.insertBefore(flashContainer, container.firstChild);
+        const firstChild = container.firstChild;
+        container.insertBefore(flashContainer, firstChild);
 
         // Auto-remove after 5 seconds
         setTimeout(() => {
@@ -1108,8 +1277,540 @@
         }, 5000);
     }
 
+    // Function to handle AJAX form submissions
+    function submitFormWithAjax(form, callback) {
+        const formData = new FormData(form);
+        
+        // Disable form inputs while submitting
+        const formInputs = form.querySelectorAll('input, button');
+        formInputs.forEach(input => { input.disabled = true; });
+        
+        fetch(form.action, {
+            method: form.method,
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (response.redirected) {
+                window.location.href = response.url;
+                return;
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Re-enable form inputs
+            formInputs.forEach(input => { input.disabled = false; });
+            
+            if (data && callback) {
+                callback(data);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showFlashMessage('An error occurred. Please try again.', 'error');
+            
+            // Re-enable form inputs
+            formInputs.forEach(input => { input.disabled = false; });
+        });
+    }
+
+    // Function to add a new test to the UI
+    function addTestToUI(test) {
+        const progressList = document.querySelector('.progress-list');
+        
+        // Remove empty message if it exists
+        const emptyMessage = progressList.querySelector('.empty-message');
+        if (emptyMessage) {
+            emptyMessage.remove();
+        }
+        
+        // Create test card HTML
+        const testCard = document.createElement('div');
+        testCard.className = 'test-card';
+        testCard.id = `test-${test.id}`;
+        testCard.onclick = function() { selectTest(test.id); };
+        testCard.style.cursor = 'pointer';
+        
+        testCard.innerHTML = `
+            <div class="test-content">
+                <div class="test-name" id="test-name-${test.id}">${test.name}</div>
+                <div class="test-date-badge" id="test-date-${test.id}">${test.date}</div>
+                <div class="test-actions">
+                    <a href="${window.location.pathname}/test/${test.id}/statistics" class="action-icon track-btn" onclick="event.stopPropagation();">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="3" y1="9" x2="21" y2="9"></line>
+                            <line x1="9" y1="21" x2="9" y2="9"></line>
+                        </svg>
+                    </a>
+                    <button type="button" class="action-icon edit-btn" onclick="editTest('${test.id}', '${test.name}', '${test.date}')">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                    </button>
+                    <form action="${window.location.pathname}/delete_test/${test.id}" method="post" style="display: inline;" class="delete-test-form">
+                        <button type="submit" class="action-icon" onclick="event.stopPropagation();">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            </svg>
+                        </button>
+                    </form>
+                </div>
+            </div>
+            <div class="progress-container">
+                <div class="progress-bar" style="width: 0%"></div>
+                <span class="progress-percentage">0%</span>
+            </div>
+        `;
+        
+        progressList.appendChild(testCard);
+        
+        // Create topic section for this test
+        createTopicSection(test);
+        
+        // Create resource section for this test
+        createResourceSection(test);
+        
+        // Add event listener to the delete form
+        const deleteForm = testCard.querySelector('.delete-test-form');
+        deleteForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (confirm('Are you sure you want to delete this test?')) {
+                submitFormWithAjax(this, function() {
+                    testCard.remove();
+                    document.getElementById(`topics-for-test-${test.id}`)?.remove();
+                    document.getElementById(`resources-for-test-${test.id}`)?.remove();
+                    showFlashMessage('Test deleted successfully!', 'success');
+                });
+            }
+        });
+        
+        // MANUALLY set the display properties for this test's sections
+        const topicsInstructionMsg = document.getElementById('topics-instruction');
+        if (topicsInstructionMsg) {
+            topicsInstructionMsg.style.display = 'none';
+        }
+        
+        const completionInstructionMsg = document.getElementById('completion-instruction');
+        if (completionInstructionMsg) {
+            completionInstructionMsg.style.display = 'none';
+        }
+        
+        // Show the topic section for this test
+        const topicSection = document.getElementById(`topics-for-test-${test.id}`);
+        if (topicSection) {
+            document.querySelectorAll('.test-topics-section').forEach(section => {
+                section.style.display = 'none';
+            });
+            topicSection.style.display = 'block';
+        }
+        
+        // Show the resource section for this test
+        const resourceSection = document.getElementById(`resources-for-test-${test.id}`);
+        if (resourceSection) {
+            document.querySelectorAll('.test-resources-section').forEach(section => {
+                section.style.display = 'none';
+            });
+            resourceSection.style.display = 'block';
+        }
+        
+        // Highlight this test
+        document.querySelectorAll('.test-card').forEach(card => {
+            card.classList.remove('selected-test');
+        });
+        testCard.classList.add('selected-test');
+    }
+
+    // Function to create topic section for a test
+    function createTopicSection(test) {
+        const resourceWidget = document.querySelector('.resource-widget');
+        
+        // Create topic section
+        const topicSection = document.createElement('div');
+        topicSection.className = 'test-topics-section';
+        topicSection.id = `topics-for-test-${test.id}`;
+        topicSection.style.display = 'none';
+        
+        topicSection.innerHTML = `
+            <h3 class="test-name-header">${test.name}</h3>
+            <div class="inline-form">
+                <form id="add-topic-form-${test.id}" action="${window.location.pathname}/test/${test.id}/add_topic" method="post" class="add-topic-form">
+                    <div class="form-row">
+                        <input type="text" name="topic_name" placeholder="Add new topic..." required class="form-control">
+                        <button type="submit" class="btn btn-add">Add Topic</button>
+                    </div>
+                </form>
+            </div>
+            <div class="topics-list" id="topics-list-${test.id}">
+                <div class="empty-topic-message" id="empty-topics-${test.id}">No topics yet. Add a topic above to get started!</div>
+            </div>
+        `;
+        
+        // Add topic section to the UI
+        resourceWidget.appendChild(topicSection);
+        
+        // Force browser to process the new DOM elements
+        void topicSection.offsetWidth;
+        
+        // Add event listener to the add topic form
+        const addTopicForm = topicSection.querySelector('.add-topic-form');
+        if (addTopicForm) {
+            addTopicForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                submitFormWithAjax(this, function(data) {
+                    if (data.success) {
+                        addTopicToUI(test.id, data.topic);
+                        addTopicForm.reset();
+                        showFlashMessage(data.message, 'success');
+                        // Make sure this test is selected
+                        selectTest(test.id);
+                    } else {
+                        showFlashMessage(data.message, 'error');
+                    }
+                });
+            });
+        }
+    }
+
+    // Function to create resource section for a test
+    function createResourceSection(test) {
+        const completionWidget = document.querySelector('.completion-widget');
+        
+        // Create resource section
+        const resourceSection = document.createElement('div');
+        resourceSection.className = 'test-resources-section';
+        resourceSection.id = `resources-for-test-${test.id}`;
+        resourceSection.style.display = 'none';
+        
+        resourceSection.innerHTML = `
+            <h3 class="test-name-header">${test.name}</h3>
+            <div class="empty-topic-message">No topics added for this test. Add topics to track progress.</div>
+        `;
+        
+        // Add to the UI
+        completionWidget.appendChild(resourceSection);
+        
+        // Force browser to process the new DOM elements
+        void resourceSection.offsetWidth;
+    }
+
+    // Function to add a new topic to the UI
+    function addTopicToUI(testId, topic) {
+        const topicsList = document.getElementById(`topics-list-${testId}`);
+        const emptyMessage = document.getElementById(`empty-topics-${testId}`);
+        
+        if (emptyMessage) {
+            emptyMessage.remove();
+        }
+        
+        // Create topic card HTML
+        const topicCard = document.createElement('div');
+        topicCard.className = 'topic-card';
+        topicCard.id = `topic-card-${topic.id}`;
+        
+        topicCard.innerHTML = `
+            <div class="topic-header">
+                <div class="topic-name" id="topic-name-${topic.id}">${topic.name}</div>
+                <div class="topic-actions">
+                    <button type="button" class="action-icon edit-btn" onclick="editTopic('${testId}', '${topic.id}', '${topic.name}')">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                    </button>
+                    <form action="${window.location.pathname}/test/${testId}/topic/${topic.id}/delete" method="post" style="display: inline;" class="delete-topic-form">
+                        <button type="submit" class="action-icon" onclick="event.stopPropagation();">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            </svg>
+                        </button>
+                    </form>
+                </div>
+            </div>
+            <div class="resource-form">
+                <form action="${window.location.pathname}/test/${testId}/topic/${topic.id}/add_resource" method="post" class="add-resource-form">
+                    <div class="form-row resource-add-row">
+                        <input type="text" name="resource_name" placeholder="Add resource..." required class="form-control">
+                        <div class="repeat-counter">
+                            <span class="repeat-label">×</span>
+                            <input type="number" name="resource_count" min="1" value="1" required class="form-control resource-count">
+                        </div>
+                        <button type="submit" class="btn btn-add">Add</button>
+                    </div>
+                </form>
+            </div>
+            <div class="resources-list" id="resources-list-${topic.id}">
+                <div class="empty-resource-message">No resources yet. Add some to start tracking progress!</div>
+            </div>
+        `;
+        
+        topicsList.appendChild(topicCard);
+        
+        // Add completion tracking card for this topic
+        addCompletionTopicToUI(testId, topic);
+        
+        // Add event listeners to the forms
+        const addResourceForm = topicCard.querySelector('.add-resource-form');
+        addResourceForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            submitFormWithAjax(this, function(data) {
+                if (data.success) {
+                    addResourceToUI(testId, topic.id, data.resource);
+                    addResourceForm.reset();
+                    addResourceForm.querySelector('input[name="resource_count"]').value = 1;
+                    showFlashMessage(data.message, 'success');
+                    
+                    // MANUALLY make sure this test is selected and visible
+                    // Hide instruction messages
+                    const topicsInstruction = document.getElementById('topics-instruction');
+                    if (topicsInstruction) {
+                        topicsInstruction.style.display = 'none';
+                    }
+                    
+                    const completionInstruction = document.getElementById('completion-instruction');
+                    if (completionInstruction) {
+                        completionInstruction.style.display = 'none';
+                    }
+                    
+                    // Show the topic section for this test
+                    const topicSection = document.getElementById(`topics-for-test-${testId}`);
+                    if (topicSection) {
+                        document.querySelectorAll('.test-topics-section').forEach(section => {
+                            section.style.display = 'none';
+                        });
+                        topicSection.style.display = 'block';
+                    }
+                    
+                    // Show the resource section for this test
+                    const resourceSection = document.getElementById(`resources-for-test-${testId}`);
+                    if (resourceSection) {
+                        document.querySelectorAll('.test-resources-section').forEach(section => {
+                            section.style.display = 'none';
+                        });
+                        resourceSection.style.display = 'block';
+                    }
+                    
+                    // Highlight the test
+                    document.querySelectorAll('.test-card').forEach(card => {
+                        card.classList.remove('selected-test');
+                    });
+                    const testCard = document.getElementById(`test-${testId}`);
+                    if (testCard) {
+                        testCard.classList.add('selected-test');
+                    }
+                    
+                    // Scroll to the newly added resource
+                    setTimeout(() => {
+                        const resourceCard = document.getElementById(`resource-card-${data.resource.id}`);
+                        if (resourceCard) {
+                            resourceCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        }
+                    }, 100);
+                } else {
+                    showFlashMessage(data.message, 'error');
+                }
+            });
+        });
+        
+        const deleteTopicForm = topicCard.querySelector('.delete-topic-form');
+        deleteTopicForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (confirm('Are you sure you want to delete this topic?')) {
+                submitFormWithAjax(this, function() {
+                    topicCard.remove();
+                    document.getElementById(`completion-topic-${topic.id}`)?.remove();
+                    showFlashMessage('Topic deleted successfully!', 'success');
+                });
+            }
+        });
+        
+        // MANUALLY make sure this test is selected and sections are visible
+        // Hide instruction messages
+        const topicsInstruction = document.getElementById('topics-instruction');
+        if (topicsInstruction) {
+            topicsInstruction.style.display = 'none';
+        }
+        
+        const completionInstruction = document.getElementById('completion-instruction');
+        if (completionInstruction) {
+            completionInstruction.style.display = 'none';
+        }
+        
+        // Show the topic section for this test
+        const topicSection = document.getElementById(`topics-for-test-${testId}`);
+        if (topicSection) {
+            document.querySelectorAll('.test-topics-section').forEach(section => {
+                section.style.display = 'none';
+            });
+            topicSection.style.display = 'block';
+        }
+        
+        // Show the resource section for this test
+        const resourceSection = document.getElementById(`resources-for-test-${testId}`);
+        if (resourceSection) {
+            document.querySelectorAll('.test-resources-section').forEach(section => {
+                section.style.display = 'none';
+            });
+            resourceSection.style.display = 'block';
+        }
+        
+        // Highlight the test
+        document.querySelectorAll('.test-card').forEach(card => {
+            card.classList.remove('selected-test');
+        });
+        const testCard = document.getElementById(`test-${testId}`);
+        if (testCard) {
+            testCard.classList.add('selected-test');
+        }
+        
+        // Scroll to the newly added topic
+        setTimeout(() => {
+            topicCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 100);
+    }
+
+    // Function to add completion tracking card for a topic
+    function addCompletionTopicToUI(testId, topic) {
+        const resourcesSection = document.getElementById(`resources-for-test-${testId}`);
+        const emptyMessage = resourcesSection.querySelector('.empty-topic-message');
+        
+        if (emptyMessage) {
+            emptyMessage.remove();
+        }
+        
+        // Create completion topic card
+        const topicCard = document.createElement('div');
+        topicCard.className = 'topic-completion-card';
+        topicCard.id = `completion-topic-${topic.id}`;
+        
+        topicCard.innerHTML = `
+            <div class="topic-header">
+                <div class="topic-name">${topic.name}</div>
+            </div>
+            <div class="empty-resources-message">No resources added for this topic.</div>
+        `;
+        
+        resourcesSection.appendChild(topicCard);
+    }
+
+    // Function to add a new resource to the UI
+    function addResourceToUI(testId, topicId, resource) {
+        // Add to topics section
+        const resourcesList = document.getElementById(`resources-list-${topicId}`);
+        const emptyMessage = resourcesList.querySelector('.empty-resource-message');
+        
+        if (emptyMessage) {
+            emptyMessage.remove();
+        }
+        
+        // Create resource card HTML
+        const resourceCard = document.createElement('div');
+        resourceCard.className = 'resource-card';
+        resourceCard.id = `resource-card-${resource.id}`;
+        
+        resourceCard.innerHTML = `
+            <div class="resource-info">
+                <span class="resource-name" id="resource-name-${resource.id}">${resource.name}</span>
+                <span class="resource-counter">× ${resource.count}</span>
+            </div>
+            <div class="resource-actions">
+                <button type="button" class="action-icon edit-btn" onclick="editResource('${testId}', '${topicId}', '${resource.id}', '${resource.name}', '${resource.count}')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                </button>
+                <form action="${window.location.pathname}/test/${testId}/topic/${topicId}/resource/${resource.id}/delete" method="post" style="display: inline;" class="delete-resource-form">
+                    <button type="submit" class="action-icon" onclick="event.stopPropagation();">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                    </button>
+                </form>
+            </div>
+        `;
+        
+        resourcesList.appendChild(resourceCard);
+        
+        // Add to completion section
+        addCompletionResourceToUI(topicId, resource);
+        
+        // Add event listener to the delete form
+        const deleteResourceForm = resourceCard.querySelector('.delete-resource-form');
+        deleteResourceForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (confirm('Are you sure you want to delete this resource?')) {
+                submitFormWithAjax(this, function() {
+                    resourceCard.remove();
+                    document.getElementById(`progress-item-${resource.id}`)?.remove();
+                    showFlashMessage('Resource deleted successfully!', 'success');
+                });
+            }
+        });
+    }
+
+    // Function to add a resource to the completion tracking UI
+    function addCompletionResourceToUI(topicId, resource) {
+        const progressList = document.getElementById(`progress-list-${topicId}`);
+        
+        // If progress list doesn't exist yet, create it
+        if (!progressList) {
+            const topicCard = document.getElementById(`completion-topic-${topicId}`);
+            if (!topicCard) return; // Safety check
+            
+            const emptyMessage = topicCard.querySelector('.empty-resources-message');
+            
+            if (emptyMessage) {
+                emptyMessage.remove();
+            }
+            
+            const newProgressList = document.createElement('div');
+            newProgressList.className = 'resources-progress-list';
+            newProgressList.id = `progress-list-${topicId}`;
+            topicCard.appendChild(newProgressList);
+            
+            // Add resource progress item to the new list
+            addResourceProgressItem(newProgressList, resource);
+        } else {
+            // Add resource progress item to existing list
+            addResourceProgressItem(progressList, resource);
+        }
+    }
+
+    // Helper function to add a resource progress item to a list
+    function addResourceProgressItem(listElement, resource) {
+        const resourceItem = document.createElement('div');
+        resourceItem.className = 'resource-progress-item';
+        resourceItem.dataset.resourceId = resource.id;
+        resourceItem.id = `progress-item-${resource.id}`;
+        
+        resourceItem.innerHTML = `
+            <div class="resource-info">
+                <span class="resource-name">${resource.name}</span>
+                <span class="resource-count">(0/${resource.count})</span>
+                <div class="resource-progress-bar">
+                    <div class="resource-progress" style="width: 0%"></div>
+                </div>
+            </div>
+            <div class="resource-actions">
+                <button class="increment-btn" onclick="trackResourceWithScore('${resource.id}')">+</button>
+                <button class="decrement-btn" onclick="updateProgress('${resource.id}', -1)" disabled>-</button>
+            </div>
+        `;
+        
+        listElement.appendChild(resourceItem);
+    }
+
     // Function to show topics for the selected test
     function showTopicsForTest(testId) {
+        console.log("Showing topics for test:", testId);
+        
         // Hide all topic sections
         document.querySelectorAll('.test-topics-section').forEach(section => {
             section.style.display = 'none';
@@ -1120,12 +1821,17 @@
             const selectedSection = document.getElementById('topics-for-test-' + testId);
             if (selectedSection) {
                 selectedSection.style.display = 'block';
+                console.log("Topic section displayed for test:", testId);
+            } else {
+                console.log("Could not find topic section for test:", testId);
             }
         }
     }
 
     // Function to show resources for the selected test
     function showResourcesForTest(testId) {
+        console.log("Showing resources for test:", testId);
+        
         // Hide all resource sections
         document.querySelectorAll('.test-resources-section').forEach(section => {
             section.style.display = 'none';
@@ -1136,6 +1842,9 @@
             const selectedSection = document.getElementById('resources-for-test-' + testId);
             if (selectedSection) {
                 selectedSection.style.display = 'block';
+                console.log("Resource section displayed for test:", testId);
+            } else {
+                console.log("Could not find resource section for test:", testId);
             }
         }
     }
@@ -1145,9 +1854,14 @@
 
     // Function to select a test when clicking a test card
     function selectTest(testId) {
+        console.log("Selecting test:", testId);
+        
         // Hide instruction messages
-        document.getElementById('topics-instruction').style.display = 'none';
-        document.getElementById('completion-instruction').style.display = 'none';
+        const topicsInstruction = document.getElementById('topics-instruction');
+        const completionInstruction = document.getElementById('completion-instruction');
+        
+        if (topicsInstruction) topicsInstruction.style.display = 'none';
+        if (completionInstruction) completionInstruction.style.display = 'none';
 
         // Display the content for both widgets
         showTopicsForTest(testId);
@@ -1157,7 +1871,34 @@
         document.querySelectorAll('.test-card').forEach(card => {
             card.classList.remove('selected-test');
         });
-        document.getElementById('test-' + testId).classList.add('selected-test');
+        
+        const testCard = document.getElementById('test-' + testId);
+        if (testCard) {
+            testCard.classList.add('selected-test');
+            
+            // Only scroll into view if it's not already visible
+            if (!isElementInViewport(testCard)) {
+                testCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
+        
+        // Log visibility status of topic and resource sections for this test
+        const topicSection = document.getElementById(`topics-for-test-${testId}`);
+        const resourceSection = document.getElementById(`resources-for-test-${testId}`);
+        
+        console.log("Topic section visible:", topicSection ? (topicSection.style.display !== 'none') : false);
+        console.log("Resource section visible:", resourceSection ? (resourceSection.style.display !== 'none') : false);
+    }
+    
+    // Helper function to check if an element is in the viewport
+    function isElementInViewport(el) {
+        const rect = el.getBoundingClientRect();
+        return (
+            rect.top >= 0 &&
+            rect.left >= 0 &&
+            rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+            rect.right <= (window.innerWidth || document.documentElement.clientWidth)
+        );
     }
 
     // Test editing functionality
@@ -1332,6 +2073,41 @@
 
     // Set up edit form handlers
     function setupEditFormHandlers() {
+        // Edit Test Form
+        const editTestForm = document.getElementById('edit-test-form');
+        if (editTestForm) {
+            editTestForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                submitFormWithAjax(this, function() {
+                    // Update test name and date in UI
+                    const testId = document.getElementById('edit-test-id').value;
+                    const newName = document.getElementById('edit-test-name').value;
+                    const newDate = document.getElementById('edit-test-date').value;
+                    
+                    // Update test card
+                    const testNameElement = document.getElementById(`test-name-${testId}`);
+                    const testDateElement = document.getElementById(`test-date-${testId}`);
+                    if (testNameElement) testNameElement.textContent = newName;
+                    if (testDateElement) testDateElement.textContent = newDate;
+                    
+                    // Update test name in topic management section header
+                    const topicsHeader = document.querySelector(`#topics-for-test-${testId} .test-name-header`);
+                    if (topicsHeader) topicsHeader.textContent = newName;
+                    
+                    // Update test name in resource tracking section header
+                    const resourcesHeader = document.querySelector(`#resources-for-test-${testId} .test-name-header`);
+                    if (resourcesHeader) resourcesHeader.textContent = newName;
+                    
+                    // Close modal
+                    closeEditModal('editTestModal');
+                    
+                    // Show success message
+                    showFlashMessage('Test updated successfully!', 'success');
+                });
+            });
+        }
+
         // Edit Topic Form
         const editTopicForm = document.getElementById('edit-topic-form');
         if (editTopicForm) {
@@ -1351,51 +2127,42 @@
 
                 fetch(formAction, {
                     method: 'POST',
-                    body: formData
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
                 })
                 .then(response => {
-                    if (response.ok) {
-                        // Update topic name in UI
-                        const topicElement = document.getElementById(`topic-name-${topicId}`);
-                        if (topicElement) {
-                            topicElement.textContent = topicName;
-                        }
+                    if (!response.ok) {
+                        return response.json().then(data => Promise.reject(data));
+                    }
+                    
+                    // Update topic name in UI
+                    const topicElement = document.getElementById(`topic-name-${topicId}`);
+                    if (topicElement) {
+                        topicElement.textContent = topicName;
+                    }
 
-                        // Update topic name in completion widget
-                        const testTopicsSection = document.getElementById(`resources-for-test-${testId}`);
-                        if (testTopicsSection) {
-                            const topicCards = testTopicsSection.querySelectorAll('.topic-completion-card');
-                            for (let i = 0; i < topicCards.length; i++) {
-                                const topicNameElem = topicCards[i].querySelector('.topic-name');
-                                // Find the matching topic by comparing content with the original name
-                                if (topicNameElem.textContent === document.getElementById(`topic-name-${topicId}`).dataset.originalName) {
-                                    topicNameElem.textContent = topicName;
-                                    break;
-                                }
-                            }
-                        }
+                    // Update topic name in completion widget
+                    const topicNameInCompletion = document.querySelector(`#completion-topic-${topicId} .topic-name`);
+                    if (topicNameInCompletion) {
+                        topicNameInCompletion.textContent = topicName;
+                    }
 
-                        // Store the new name in the data attribute for future reference
+                    // Store the new name in the data attribute for future reference
+                    if (topicElement) {
                         topicElement.dataset.originalName = topicName;
-
-                        // Close modal
-                        closeEditModal('editTopicModal');
-
-                        // Show success message
-                        showFlashMessage(`Topic "${topicName}" updated successfully!`, 'success');
-
-                        return;
                     }
-                    return response.json();
-                })
-                .then(data => {
-                    if (data && !data.success) {
-                        showFlashMessage(data.message || 'An error occurred', 'error');
-                    }
+
+                    // Close modal
+                    closeEditModal('editTopicModal');
+
+                    // Show success message
+                    showFlashMessage(`Topic "${topicName}" updated successfully!`, 'success');
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    showFlashMessage('An error occurred while updating the topic', 'error');
+                    showFlashMessage(error.message || 'An error occurred while updating the topic', 'error');
                 });
             });
         }
@@ -1423,67 +2190,64 @@
 
                 fetch(formAction, {
                     method: 'POST',
-                    body: formData
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
                 })
                 .then(response => {
-                    if (response.ok) {
-                        // Update resource info in UI
-                        // Update in resources list
-                        const resourceNameElem = document.getElementById(`resource-name-${resourceId}`);
-                        if (resourceNameElem) {
-                            resourceNameElem.textContent = resourceName;
-                            // Update count
-                            const counterElem = resourceNameElem.closest('.resource-info').querySelector('.resource-counter');
-                            if (counterElem) {
-                                counterElem.textContent = `× ${resourceCount}`;
+                    if (!response.ok) {
+                        return response.json().then(data => Promise.reject(data));
+                    }
+                    
+                    // Update resource info in resources list
+                    const resourceNameElem = document.getElementById(`resource-name-${resourceId}`);
+                    if (resourceNameElem) {
+                        resourceNameElem.textContent = resourceName;
+                        // Update count
+                        const counterElem = resourceNameElem.closest('.resource-info').querySelector('.resource-counter');
+                        if (counterElem) {
+                            counterElem.textContent = `× ${resourceCount}`;
+                        }
+                    }
+
+                    // Update in progress tracking widget
+                    const resourceItem = document.getElementById(`progress-item-${resourceId}`);
+                    if (resourceItem) {
+                        // Update name
+                        const nameElem = resourceItem.querySelector('.resource-name');
+                        if (nameElem) {
+                            nameElem.textContent = resourceName;
+                        }
+
+                        // Update count in format (completed/count)
+                        const countElem = resourceItem.querySelector('.resource-count');
+                        if (countElem) {
+                            const currentText = countElem.textContent;
+                            const completed = currentText.match(/\((\d+)\//);
+                            if (completed && completed[1]) {
+                                countElem.textContent = `(${completed[1]}/${resourceCount})`;
                             }
                         }
 
-                        // Update in progress tracking widget
-                        const resourceItems = document.querySelectorAll(`.resource-progress-item[data-resource-id="${resourceId}"]`);
-                        resourceItems.forEach(item => {
-                            const nameElem = item.querySelector('.resource-name');
-                            if (nameElem) {
-                                nameElem.textContent = resourceName;
-                            }
-
-                            // Update count in format (completed/count)
-                            const countElem = item.querySelector('.resource-count');
-                            if (countElem) {
-                                const currentText = countElem.textContent;
-                                const completed = currentText.match(/\((\d+)\//);
-                                if (completed && completed[1]) {
-                                    countElem.textContent = `(${completed[1]}/${resourceCount})`;
-                                }
-                            }
-
-                            // Update progress bar
-                            const progressBar = item.querySelector('.resource-progress');
-                            if (progressBar) {
-                                const completed = parseInt(item.querySelector('.resource-count').textContent.match(/\((\d+)\//)[1]);
-                                const percentage = (completed / resourceCount * 100);
-                                progressBar.style.width = `${percentage}%`;
-                            }
-                        });
-
-                        // Close modal
-                        closeEditModal('editResourceModal');
-
-                        // Show success message
-                        showFlashMessage(`Resource "${resourceName}" updated successfully!`, 'success');
-
-                        return;
+                        // Update progress bar
+                        const progressBar = resourceItem.querySelector('.resource-progress');
+                        if (progressBar) {
+                            const completed = parseInt(resourceItem.querySelector('.resource-count').textContent.match(/\((\d+)\//)[1]);
+                            const percentage = (completed / resourceCount * 100);
+                            progressBar.style.width = `${percentage}%`;
+                        }
                     }
-                    return response.json();
-                })
-                .then(data => {
-                    if (data && !data.success) {
-                        showFlashMessage(data.message || 'An error occurred', 'error');
-                    }
+
+                    // Close modal
+                    closeEditModal('editResourceModal');
+
+                    // Show success message
+                    showFlashMessage(`Resource "${resourceName}" updated successfully!`, 'success');
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    showFlashMessage('An error occurred while updating the resource', 'error');
+                    showFlashMessage(error.message || 'An error occurred while updating the resource', 'error');
                 });
             });
         }

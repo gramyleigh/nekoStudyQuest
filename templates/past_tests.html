@@ -1,55 +1,1125 @@
-<!-- templates/past_tests.html -->
-{% extends 'base.html' %}
+{% extends "base.html" %}
 
-{% block title %}Past Tests{% endblock %}
+{% block title %}Past Tests Archive - Neko Study Quest{% endblock %}
+
+{% block page_title %}Past Tests Archive{% endblock %}
+
+{% block subtitle %}Learning From Your Study Journey{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{{ url_for('index') }}">Home</a>
+    <span class="separator">›</span>
+    <span class="current">Past Tests Archive</span>
+</div>
+{% endblock %}
 
 {% block content %}
-{% set past_tests = past_tests|default([]) %}
-
-<div class="page-header">
-    <h1 class="page-title">Past Tests</h1>
-    <p class="page-subtitle">Review your completed test history</p>
+<div class="page-intro">
+    <p>Review your past tests, see what you've studied, and learn from your preparation journey! Each test includes your progress statistics, study resources, and insights to help you improve for future exams.</p>
+    <div class="cat-paw">🐾</div>
 </div>
 
-<div class="widget">
-    <div class="widget-header">
-        <h2 class="widget-title">
-            <i class="fas fa-history"></i>
-            Past Test Results
-        </h2>
-    </div>
-    
-    {% if past_tests %}
-        <div class="past-tests-list">
-            {% for test in past_tests %}
-                <div class="past-test-item">
-                    <div class="past-test-header">
-                        <div class="past-test-title">{{ test.test_name }}</div>
-                        <div class="past-test-date">{{ test.date }}</div>
+{% if past_tests and past_tests|length > 0 %}
+    {% for test in past_tests %}
+        <a href="{{ url_for('test_statistics', subject_name=test.subject_name, test_id=test.id) }}" class="test-card-link">
+            <div class="test-card">
+                <div class="test-header">
+                    <div class="test-info">
+                        <h3 class="test-title">{{ test.name }}</h3>
+                        <div class="test-meta">
+                            <span class="test-subject">{{ test.subject_name }}</span>
+                            <span class="test-date">{{ test.date }}</span>
+                        </div>
                     </div>
-                    <div class="past-test-subject">{{ test.subject_name }}</div>
-                    <div class="past-test-score">Score: {{ test.score|default('N/A') }}%</div>
-                    <div class="past-test-progress">
-                        <div class="past-test-progress-bar" style="width: {{ test.score|default(0) }}%"></div>
+                    
+                    <div class="progress-badge" 
+                         style="--progress: {{ test.progress }}%; --color: {% if test.progress < 40 %}var(--danger){% elif test.progress < 70 %}var(--warning){% else %}var(--success){% endif %};">
+                        <div class="progress-ring">
+                            <svg width="60" height="60" viewBox="0 0 120 120">
+                                <circle class="progress-ring-circle-bg" cx="60" cy="60" r="50" />
+                                <circle class="progress-ring-circle" cx="60" cy="60" r="50" />
+                            </svg>
+                            <span class="progress-text">{{ test.progress|round|int }}%</span>
+                        </div>
                     </div>
-                    <a href="{{ url_for('test_statistics', test_id=test.id|default('')) }}" class="view-details-btn">View Details</a>
                 </div>
-            {% endfor %}
-        </div>
-    {% else %}
-        <div class="empty-state">
-            <span class="empty-state-icon">
-                <i class="fas fa-clipboard-list"></i>
-            </span>
-            <p>No past tests found. Complete a test to see your results!</p>
-        </div>
-    {% endif %}
-</div>
 
-<!-- Back to Dashboard Button -->
-<div class="action-buttons">
-    <a href="{{ url_for('index') }}" class="btn btn-secondary">
-        <i class="fas fa-arrow-left"></i> Back to Dashboard
-    </a>
-</div>
+                <!-- Calculate statistics -->
+                {% set completed_resources = test.records|length %}
+                {% set total_resources = namespace(count=0) %}
+                {% for topic in test.topics %}
+                    {% for resource in topic.resources %}
+                        {% set total_resources.count = total_resources.count + resource.count %}
+                    {% endfor %}
+                {% endfor %}
+                
+                {% set unique_dates = [] %}
+                {% for record in test.records %}
+                    {% if record.date not in unique_dates %}
+                        {% set _ = unique_dates.append(record.date) %}
+                    {% endif %}
+                {% endfor %}
+                {% set study_days = unique_dates|length %}
+                
+                {% set scores = [] %}
+                {% for record in test.records %}
+                    {% if record.score is defined %}
+                        {% set _ = scores.append(record.score) %}
+                    {% endif %}
+                {% endfor %}
+                {% set avg_score = (scores|sum / scores|length)|round(1) if scores|length > 0 else 0 %}
+                
+                <!-- Prep time calculation -->
+                {% set study_duration_days = 0 %}
+                {% if unique_dates|length >= 2 %}
+                    {% set earliest_date = unique_dates|sort|first %}
+                    {% set latest_date = unique_dates|sort|last %}
+                    {% set earliest = earliest_date|strptime('%Y-%m-%d') %}
+                    {% set latest = latest_date|strptime('%Y-%m-%d') %}
+                    {% set study_duration_days = ((latest.date() - earliest.date()).days + 1) %}
+                {% elif unique_dates|length == 1 %}
+                    {% set study_duration_days = 1 %}
+                {% endif %}
+                
+                <div class="test-stats-overview">
+                    <div class="stats-card">
+                        <div class="stats-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                            </svg>
+                        </div>
+                        <div class="stats-value">{{ completed_resources }} / {{ total_resources.count }}</div>
+                        <div class="stats-label">Resources Completed</div>
+                    </div>
+                    
+                    <div class="stats-card">
+                        <div class="stats-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="16" y1="2" x2="16" y2="6"></line>
+                                <line x1="8" y1="2" x2="8" y2="6"></line>
+                                <line x1="3" y1="10" x2="21" y2="10"></line>
+                            </svg>
+                        </div>
+                        <div class="stats-value">{{ study_days }}</div>
+                        <div class="stats-label">Study Days</div>
+                    </div>
+                    
+                    <div class="stats-card">
+                        <div class="stats-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+                                <line x1="7" y1="7" x2="7.01" y2="7"></line>
+                            </svg>
+                        </div>
+                        <div class="stats-value">{{ avg_score }}%</div>
+                        <div class="stats-label">Average Score</div>
+                    </div>
+                    
+                    <div class="stats-card">
+                        <div class="stats-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
+                        </div>
+                        <div class="stats-value">{{ study_duration_days }}</div>
+                        <div class="stats-label">Study Period (Days)</div>
+                    </div>
+                </div>
+                
+                <div class="analysis-section">
+                    <h4 class="analysis-title">Study Pattern Analysis</h4>
+                    
+                    <div class="analysis-grid">
+                        <div class="analysis-chart">
+                            <canvas id="progressChart-{{ test.id }}"></canvas>
+                            <div class="chart-corner top-left">✨</div>
+                            <div class="chart-corner top-right">🌟</div>
+                            <div class="chart-corner bottom-left">⭐</div>
+                            <div class="chart-corner bottom-right">✨</div>
+                        </div>
+                        
+                        <div class="analysis-insights">
+                            <div class="insight-card">
+                                <div class="insight-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                    </svg>
+                                </div>
+                                <div class="insight-content">
+                                    <h5 class="insight-title">Completion Pattern</h5>
+                                    <div class="insight-text">
+                                        {% if completed_resources >= total_resources.count %}
+                                            <p>You completed all planned resources for this test. Great job!</p>
+                                        {% elif completed_resources >= (total_resources.count * 0.8) %}
+                                            <p>You completed most ({{ (completed_resources / total_resources.count * 100)|round|int }}%) of your planned resources.</p>
+                                        {% elif completed_resources >= (total_resources.count * 0.5) %}
+                                            <p>You completed about half of your planned resources.</p>
+                                        {% else %}
+                                            <p>You completed less than half of your planned resources.</p>
+                                        {% endif %}
+                                        
+                                        {% if study_days > 0 %}
+                                            <p>Average pace: {{ (completed_resources / study_days)|round(1) }} resources per study day.</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="insight-card">
+                                <div class="insight-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                                    </svg>
+                                </div>
+                                <div class="insight-content">
+                                    <h5 class="insight-title">Study Pattern</h5>
+                                    <div class="insight-text">
+                                        {% if study_duration_days > 0 and study_days > 0 %}
+                                            {% set consistency = (study_days / study_duration_days * 100)|round|int %}
+                                            {% if consistency >= 80 %}
+                                                <p>You studied very consistently, on {{ consistency }}% of the days in your study period.</p>
+                                            {% elif consistency >= 50 %}
+                                                <p>You studied with moderate consistency, on {{ consistency }}% of the days in your study period.</p>
+                                            {% else %}
+                                                <p>Your study pattern was somewhat inconsistent, studying on only {{ consistency }}% of the days in your study period.</p>
+                                            {% endif %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Topic progress chart -->
+                    <div class="topic-analysis">
+                        <h5 class="topic-analysis-title">Topic Focus Distribution</h5>
+                        <div class="topic-chart-container">
+                            <canvas id="topicChart-{{ test.id }}"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="improvement-box">
+                        <div class="improvement-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M18 20V10"></path>
+                                <path d="M12 20V4"></path>
+                                <path d="M6 20v-6"></path>
+                            </svg>
+                        </div>
+                        <div class="improvement-content">
+                            <h5 class="improvement-title">Improvement Ideas for {{ test.subject_name }}</h5>
+                            <ul class="improvement-list">
+                                {% if completed_resources < total_resources.count %}
+                                    <li>Aim to complete all planned resources for future tests.</li>
+                                {% endif %}
+                                
+                                {% if study_duration_days > 0 and study_days > 0 %}
+                                    {% set consistency = (study_days / study_duration_days * 100)|round|int %}
+                                    {% if consistency < 70 %}
+                                        <li>Try to study more consistently throughout your preparation period.</li>
+                                    {% endif %}
+                                {% endif %}
+                                
+                                {% if study_duration_days < 7 and completed_resources > 0 %}
+                                    <li>Consider starting your study preparation earlier to spread out the workload.</li>
+                                {% endif %}
+                                
+                                {% if avg_score < 80 and scores|length > 0 %}
+                                    <li>Focus on quality of learning - your average score of {{ avg_score }}% suggests room for improvement.</li>
+                                {% endif %}
+                                
+                                {% if completed_resources > 0 and (completed_resources / study_days > 4) and study_days > 1 %}
+                                    <li>Consider a more balanced approach instead of completing many resources in fewer days.</li>
+                                {% endif %}
+                                
+                                <li>Build on what you've learned for this subject in future tests.</li>
+                                
+                                <!-- Topic-specific recommendations -->
+                                {% set topic_resources = {} %}
+                                {% for record in test.records %}
+                                    {% if record.topic_name in topic_resources %}
+                                        {% set _ = topic_resources.update({record.topic_name: topic_resources[record.topic_name] + 1}) %}
+                                    {% else %}
+                                        {% set _ = topic_resources.update({record.topic_name: 1}) %}
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if topic_resources.keys()|length > 1 %}
+                                    {% set max_topic = namespace(name='', count=0) %}
+                                    {% set min_topic = namespace(name='', count=1000) %}
+                                    
+                                    {% for topic_name, count in topic_resources.items() %}
+                                        {% if count > max_topic.count %}
+                                            {% set max_topic.name = topic_name %}
+                                            {% set max_topic.count = count %}
+                                        {% endif %}
+                                        {% if count < min_topic.count %}
+                                            {% set min_topic.name = topic_name %}
+                                            {% set min_topic.count = count %}
+                                        {% endif %}
+                                    {% endfor %}
+                                    
+                                    {% if max_topic.count > (min_topic.count * 2) %}
+                                        <li>Your focus was heavily on "{{ max_topic.name }}". Consider more balanced coverage of topics like "{{ min_topic.name }}" for future tests.</li>
+                                    {% endif %}
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Study Engagement Timeline -->
+                <div class="timeline-section">
+                    <h4 class="timeline-title">Study Engagement Timeline</h4>
+                    
+                    <div class="timeline-container">
+                        {% if unique_dates|length > 0 %}
+                            <div class="timeline">
+                                {% set all_dates = unique_dates|sort %}
+                                {% set first_date = all_dates|first|strptime('%Y-%m-%d') %}
+                                {% set last_date = all_dates|last|strptime('%Y-%m-%d') %}
+                                
+                                {% set date_map = {} %}
+                                {% for record in test.records %}
+                                    {% if record.date in date_map %}
+                                        {% set _ = date_map.update({record.date: date_map[record.date] + 1}) %}
+                                    {% else %}
+                                        {% set _ = date_map.update({record.date: 1}) %}
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% set max_count = namespace(value=0) %}
+                                {% for date, count in date_map.items() %}
+                                    {% if count > max_count.value %}
+                                        {% set max_count.value = count %}
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% set days_range = ((last_date - first_date).days + 1) %}
+                                {% for i in range(days_range) %}
+                                    {% set current_day = first_date + timedelta(days=i) %}
+                                    {% set display_date = current_day.strftime('%Y-%m-%d') %}
+                                    <div class="timeline-day">
+                                        <div class="timeline-marker {% if display_date in date_map %}active{% endif %}" 
+                                             style="{% if display_date in date_map %}--height: {{ (date_map[display_date] / max_count.value * 100)|round|int }}%;{% endif %}">
+                                            {% if display_date in date_map %}
+                                                <span class="marker-tooltip">{{ date_map[display_date] }} resources on {{ display_date }}</span>
+                                            {% endif %}
+                                        </div>
+                                        {% if loop.index % 5 == 1 or loop.index == 1 %}
+                                            <div class="timeline-date">{{ display_date }}</div>
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="no-timeline-data">No study activity recorded for this test.</div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="test-action-buttons">
+                    <a href="{{ url_for('test_statistics', subject_name=test.subject_name, test_id=test.id) }}" class="btn btn-primary">
+                        <span class="btn-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline>
+                                <polyline points="16 7 22 7 22 13"></polyline>
+                            </svg>
+                        </span>
+                        View Detailed Stats
+                    </a>
+                </div>
+                
+                <div class="cat-paw">🐾</div>
+            </div>
+        </a>
+    {% endfor %}
+{% else %}
+    <div class="no-tests">
+        <div class="no-tests-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+        </div>
+        <p>No past tests found. Come back after your scheduled tests have passed!</p>
+    </div>
+{% endif %}
+
+<a href="{{ url_for('index') }}" class="back-button">
+    <span class="btn-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+        </svg>
+    </span>
+    Back to Home
+</a>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Base styles */
+    .page-intro {
+        background-color: var(--widget-bg);
+        border-radius: 20px;
+        padding: 25px;
+        margin: 30px 0;
+        box-shadow: 5px 5px 0 var(--primary-light);
+        border: 3px solid var(--primary);
+        position: relative;
+        text-align: center;
+        font-size: 1.2rem;
+        line-height: 1.6;
+    }
+
+    /* Test cards */
+    .test-card {
+        background-color: var(--widget-bg);
+        border-radius: 20px;
+        padding: 30px;
+        margin-bottom: 40px;
+        border: 3px solid var(--primary);
+        box-shadow: 5px 5px 0 var(--primary-light);
+        position: relative;
+        backdrop-filter: blur(5px);
+    }
+
+    .test-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 25px;
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+
+    .test-info {
+        flex: 1;
+    }
+
+    .test-title {
+        font-family: 'Bangers', cursive;
+        color: var(--secondary);
+        font-size: 2.2rem;
+        margin: 0 0 10px 0;
+        letter-spacing: 1px;
+    }
+
+    .test-meta {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+
+    .test-subject {
+        display: inline-block;
+        padding: 5px 15px;
+        background-color: var(--primary-light);
+        color: var(--primary-dark);
+        border-radius: 30px;
+        font-weight: bold;
+        font-size: 0.9rem;
+    }
+
+    .test-date {
+        display: inline-block;
+        padding: 5px 15px;
+        background-color: var(--secondary-light);
+        color: var(--secondary-dark);
+        border-radius: 30px;
+        font-weight: bold;
+        font-size: 0.9rem;
+    }
+
+    /* Progress ring */
+    .progress-badge {
+        --size: 80px;
+        width: var(--size);
+        height: var(--size);
+        position: relative;
+    }
+
+    .progress-ring {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .progress-ring-circle-bg {
+        fill: none;
+        stroke: #e0e0e0;
+        stroke-width: 8;
+    }
+
+    .progress-ring-circle {
+        fill: none;
+        stroke: var(--color);
+        stroke-width: 8;
+        stroke-linecap: round;
+        stroke-dasharray: 314.159; /* 2*pi*50 */
+        stroke-dashoffset: calc(314.159 - (314.159 * var(--progress)) / 100);
+        transform: rotate(-90deg);
+        transform-origin: 50% 50%;
+    }
+
+    .progress-text {
+        position: absolute;
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: var(--dark);
+    }
+
+    /* Stats overview section */
+    .test-stats-overview {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 20px;
+        margin: 30px 0;
+    }
+
+    .stats-card {
+        background-color: var(--light);
+        border-radius: 15px;
+        padding: 20px 15px;
+        text-align: center;
+        box-shadow: 0 3px 8px rgba(0,0,0,0.05);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        transition: all 0.3s ease;
+    }
+
+    .stats-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    .stats-icon {
+        width: 48px;
+        height: 48px;
+        background-color: var(--secondary-light);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 15px;
+        color: var(--secondary-dark);
+    }
+
+    .stats-value {
+        font-size: 1.8rem;
+        font-weight: bold;
+        color: var(--secondary-dark);
+        margin-bottom: 5px;
+    }
+
+    .stats-label {
+        font-size: 0.9rem;
+        color: var(--dark);
+    }
+
+    /* Analysis section */
+    .analysis-section {
+        margin: 40px 0;
+    }
+
+    .analysis-title, .timeline-title {
+        font-family: 'Bangers', cursive;
+        color: var(--primary-dark);
+        font-size: 1.8rem;
+        margin: 0 0 20px 0;
+        letter-spacing: 1px;
+        text-align: center;
+    }
+
+    .analysis-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 25px;
+    }
+
+    .analysis-chart {
+        background-color: var(--light);
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 3px 8px rgba(0,0,0,0.05);
+        position: relative;
+        height: 300px;
+    }
+
+    .analysis-insights {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .insight-card {
+        background-color: var(--light);
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 3px 8px rgba(0,0,0,0.05);
+        flex: 1;
+        display: flex;
+        align-items: flex-start;
+        gap: 15px;
+    }
+
+    .insight-icon {
+        width: 40px;
+        height: 40px;
+        background-color: var(--primary-light);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--primary-dark);
+        flex-shrink: 0;
+    }
+
+    .insight-content {
+        flex: 1;
+    }
+
+    .insight-title {
+        font-weight: bold;
+        color: var(--primary-dark);
+        margin: 0 0 10px 0;
+        font-size: 1.1rem;
+    }
+
+    .insight-text {
+        color: var(--dark);
+        font-size: 0.95rem;
+        line-height: 1.5;
+    }
+
+    .insight-text p {
+        margin: 0 0 8px 0;
+    }
+
+    /* Topic analysis section */
+    .topic-analysis {
+        margin: 30px 0;
+    }
+
+    .topic-analysis-title {
+        font-weight: bold;
+        color: var(--primary-dark);
+        margin: 0 0 15px 0;
+        font-size: 1.3rem;
+        text-align: center;
+    }
+
+    .topic-chart-container {
+        background-color: var(--light);
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 3px 8px rgba(0,0,0,0.05);
+        height: 300px;
+        position: relative;
+    }
+
+    /* Improvement box */
+    .improvement-box {
+        background-color: rgba(255, 235, 59, 0.1);
+        border-radius: 15px;
+        padding: 25px;
+        margin: 30px 0 20px;
+        border: 1px dashed var(--warning);
+        display: flex;
+        align-items: flex-start;
+        gap: 20px;
+    }
+
+    .improvement-icon {
+        width: 48px;
+        height: 48px;
+        background-color: rgba(255, 235, 59, 0.2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--warning);
+        flex-shrink: 0;
+    }
+
+    .improvement-content {
+        flex: 1;
+    }
+
+    .improvement-title {
+        font-weight: bold;
+        color: var(--dark);
+        margin: 0 0 15px 0;
+        font-size: 1.2rem;
+    }
+
+    .improvement-list {
+        color: var(--dark);
+        padding-left: 20px;
+        margin: 0;
+    }
+
+    .improvement-list li {
+        margin-bottom: 8px;
+        line-height: 1.5;
+    }
+
+    /* Timeline section */
+    .timeline-section {
+        margin: 40px 0;
+    }
+
+    .timeline-container {
+        background-color: var(--light);
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 3px 8px rgba(0,0,0,0.05);
+        position: relative;
+        height: 180px;
+    }
+
+    .timeline {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        height: 120px;
+        gap: 2px;
+        margin-bottom: 30px;
+    }
+
+    .timeline-day {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        position: relative;
+    }
+
+    .timeline-marker {
+        width: 100%;
+        height: 5px;
+        background-color: #f0f0f0;
+        border-radius: 2px;
+        position: relative;
+        transition: all 0.3s ease;
+    }
+
+    .timeline-marker.active {
+        background-color: var(--success);
+        height: calc(var(--height, 100) * 0.8px);
+        max-height: 80px;
+    }
+
+    .marker-tooltip {
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: var(--dark);
+        color: white;
+        padding: 5px 10px;
+        border-radius: 5px;
+        font-size: 0.8rem;
+        white-space: nowrap;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+        pointer-events: none;
+        z-index: 10;
+    }
+
+    .timeline-marker:hover .marker-tooltip {
+        opacity: 1;
+    }
+
+    .timeline-date {
+        font-size: 0.8rem;
+        color: var(--dark);
+        transform: rotate(-45deg);
+        transform-origin: top left;
+        margin-top: 5px;
+        position: absolute;
+        bottom: -30px;
+        left: 0;
+    }
+
+    .no-timeline-data {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
+        font-style: italic;
+        color: var(--dark);
+    }
+
+    /* Action buttons */
+    .test-action-buttons {
+        display: flex;
+        justify-content: center;
+        margin-top: 30px;
+    }
+
+    /* Chart styles */
+    .chart-corner {
+        position: absolute;
+        font-size: 1.5rem;
+        z-index: 1;
+    }
+
+    .chart-corner.top-left {
+        top: 5px;
+        left: 5px;
+    }
+
+    .chart-corner.top-right {
+        top: 5px;
+        right: 5px;
+    }
+
+    .chart-corner.bottom-left {
+        bottom: 5px;
+        left: 5px;
+    }
+
+    .chart-corner.bottom-right {
+        bottom: 5px;
+        right: 5px;
+    }
+
+    /* Cat paw and button styles */
+    .cat-paw {
+        position: absolute;
+        bottom: -15px;
+        right: -15px;
+        font-size: 1.8rem;
+        transform: rotate(15deg);
+    }
+
+    .btn {
+        padding: 12px 20px;
+        border-radius: 12px;
+        font-family: 'Comic Neue', cursive;
+        font-weight: bold;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        border: 2px solid var(--dark);
+        box-shadow: 3px 3px 0 var(--dark);
+    }
+
+    .btn:hover {
+        transform: translateY(-3px) rotate(-1deg);
+        box-shadow: 5px 5px 0 var(--dark);
+    }
+
+    .btn-primary {
+        background-color: var(--secondary);
+        color: white;
+    }
+
+    .btn-icon {
+        margin-right: 8px;
+    }
+
+    .back-button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 12px 25px;
+        background-color: var(--secondary);
+        color: white;
+        border-radius: 15px;
+        font-family: 'Comic Neue', cursive;
+        font-weight: bold;
+        font-size: 1.1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        margin: 40px auto;
+        width: fit-content;
+        border: 2px solid var(--dark);
+        box-shadow: 3px 3px 0 var(--dark);
+    }
+
+    .back-button:hover {
+        transform: translateY(-3px) rotate(-1deg);
+        box-shadow: 5px 5px 0 var(--dark);
+    }
+
+    /* No tests message */
+    .no-tests {
+        background-color: var(--widget-bg);
+        border-radius: 20px;
+        padding: 50px 30px;
+        border: 2px dashed var(--primary);
+        text-align: center;
+        max-width: 600px;
+        margin: 50px auto;
+    }
+
+    .no-tests-icon {
+        width: 80px;
+        height: 80px;
+        background-color: var(--primary-light);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+        color: var(--primary-dark);
+    }
+
+    .no-tests p {
+        font-size: 1.2rem;
+        color: var(--dark);
+        margin: 0;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 992px) {
+        .test-stats-overview {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        
+        .analysis-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .test-header {
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .test-info {
+            text-align: center;
+        }
+        
+        .test-meta {
+            justify-content: center;
+        }
+        
+        .progress-badge {
+            margin: 10px auto;
+        }
+        
+        .test-stats-overview {
+            grid-template-columns: 1fr;
+        }
+        
+        .improvement-box {
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+        
+        .improvement-list {
+            text-align: left;
+        }
+        
+        .timeline {
+            height: 80px;
+        }
+    }
+
+    /* New styles for test card link */
+    .test-card-link {
+        display: block;
+        text-decoration: none;
+        color: inherit;
+        transition: transform 0.3s ease;
+    }
+
+    .test-card-link:hover {
+        transform: translateY(-5px);
+    }
+
+    .test-card-link:hover .test-card {
+        box-shadow: 8px 8px 0 var(--primary-light);
+    }
+</style>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set Chart.js defaults
+        Chart.defaults.font.family = "'Comic Neue', cursive";
+        Chart.defaults.font.size = 14;
+        Chart.defaults.color = "#333";
+        Chart.defaults.borderColor = "rgba(106, 90, 205, 0.2)";
+
+        {% if past_tests and past_tests|length > 0 %}
+            {% for test in past_tests %}
+                // Get resource records by date for this test
+                {% set date_counts = {} %}
+                {% for record in test.records %}
+                    {% if record.date in date_counts %}
+                        {% set _ = date_counts.update({record.date: date_counts[record.date] + 1}) %}
+                    {% else %}
+                        {% set _ = date_counts.update({record.date: 1}) %}
+                    {% endif %}
+                {% endfor %}
+                
+                // Sort dates for the chart
+                {% set sorted_dates = date_counts.keys()|sort %}
+                
+                // Create progress chart
+                const progressCtx = document.getElementById('progressChart-{{ test.id }}');
+                if (progressCtx) {
+                    const progressChart = new Chart(progressCtx, {
+                        type: 'line',
+                        data: {
+                            labels: [{% for date in sorted_dates %}'{{ date }}'{% if not loop.last %}, {% endif %}{% endfor %}],
+                            datasets: [{
+                                label: 'Resources Completed',
+                                data: [{% for date in sorted_dates %}{{ date_counts[date] }}{% if not loop.last %}, {% endif %}{% endfor %}],
+                                backgroundColor: 'rgba(106, 90, 205, 0.2)',
+                                borderColor: 'rgba(106, 90, 205, 1)',
+                                borderWidth: 2,
+                                pointBackgroundColor: 'rgba(106, 90, 205, 1)',
+                                pointBorderColor: '#fff',
+                                pointRadius: 5,
+                                tension: 0.3,
+                                fill: true
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                title: {
+                                    display: true,
+                                    text: 'Daily Study Progress',
+                                    padding: {
+                                        top: 10,
+                                        bottom: 20
+                                    }
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    title: {
+                                        display: true,
+                                        text: 'Resources Completed'
+                                    },
+                                    ticks: {
+                                        stepSize: 1
+                                    }
+                                },
+                                x: {
+                                    title: {
+                                        display: true,
+                                        text: 'Date'
+                                    },
+                                    ticks: {
+                                        maxRotation: 45,
+                                        minRotation: 45
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+                
+                // Get resources by topic for this test
+                {% set topic_counts = {} %}
+                {% for record in test.records %}
+                    {% if record.topic_name in topic_counts %}
+                        {% set _ = topic_counts.update({record.topic_name: topic_counts[record.topic_name] + 1}) %}
+                    {% else %}
+                        {% set _ = topic_counts.update({record.topic_name: 1}) %}
+                    {% endif %}
+                {% endfor %}
+                
+                // Create topic chart
+                const topicCtx = document.getElementById('topicChart-{{ test.id }}');
+                if (topicCtx) {
+                    const topicChart = new Chart(topicCtx, {
+                        type: 'pie',
+                        data: {
+                            labels: [{% for topic_name, count in topic_counts.items() %}'{{ topic_name }}'{% if not loop.last %}, {% endif %}{% endfor %}],
+                            datasets: [{
+                                data: [{% for topic_name, count in topic_counts.items() %}{{ count }}{% if not loop.last %}, {% endif %}{% endfor %}],
+                                backgroundColor: [
+                                    'rgba(255, 99, 132, 0.7)',
+                                    'rgba(54, 162, 235, 0.7)',
+                                    'rgba(255, 206, 86, 0.7)',
+                                    'rgba(75, 192, 192, 0.7)',
+                                    'rgba(153, 102, 255, 0.7)',
+                                    'rgba(255, 159, 64, 0.7)',
+                                    'rgba(199, 199, 199, 0.7)',
+                                    'rgba(83, 102, 255, 0.7)'
+                                ],
+                                borderColor: [
+                                    'rgba(255, 99, 132, 1)',
+                                    'rgba(54, 162, 235, 1)',
+                                    'rgba(255, 206, 86, 1)',
+                                    'rgba(75, 192, 192, 1)',
+                                    'rgba(153, 102, 255, 1)',
+                                    'rgba(255, 159, 64, 1)',
+                                    'rgba(199, 199, 199, 1)',
+                                    'rgba(83, 102, 255, 1)'
+                                ],
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'right',
+                                    labels: {
+                                        font: {
+                                            size: 12
+                                        }
+                                    }
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Resources by Topic',
+                                    padding: {
+                                        top: 10,
+                                        bottom: 20
+                                    }
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            const label = context.label || '';
+                                            const value = context.raw;
+                                            const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                                            const percentage = Math.round((value / total) * 100);
+                                            return `${label}: ${value} resources (${percentage}%)`;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            {% endfor %}
+        {% endif %}
+    });
+</script>
 {% endblock %}

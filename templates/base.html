@@ -342,7 +342,6 @@
                     <li class="nav-item"><a href="{{ url_for('index') }}" class="nav-link"><i class="fas fa-home"></i> Home</a></li>
                     <li class="nav-item"><a href="{{ url_for('all_statistics') }}" class="nav-link"><i class="fas fa-chart-bar"></i> Statistics</a></li>
                     <li class="nav-item"><a href="{{ url_for('past_tests') }}" class="nav-link"><i class="fas fa-history"></i> Past Tests</a></li>
-                    <li class="nav-item"><a href="{{ url_for('edit_subjects') }}" class="nav-link"><i class="fas fa-edit"></i> Edit Subjects</a></li>
                     <li class="nav-item nav-item-debug"><a href="{{ url_for('email_config') }}" class="nav-link"><i class="fas fa-envelope"></i> Email Config</a></li>
                     <li class="nav-item nav-item-debug"><a href="{{ url_for('email_test_page') }}" class="nav-link"><i class="fas fa-paper-plane"></i> Test Emails</a></li>
                 </ul>
@@ -352,19 +351,7 @@
 
         {% block breadcrumbs %}{% endblock %}
 
-        {% block messages %}
-        {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-        <div class="messages">
-            {% for category, message in messages %}
-            <div class="alert alert-{{ category }}">
-                {{ message }}
-            </div>
-            {% endfor %}
-        </div>
-        {% endif %}
-        {% endwith %}
-        {% endblock %}
+        
 
         {% block content %}{% endblock %}
 

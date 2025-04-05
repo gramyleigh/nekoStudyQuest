@@ -15,38 +15,70 @@
 {% endblock %}
 
 {% block content %}
-{# Initialize variables to prevent errors with null values #}
-{% set stats = stats|default({}) %}
-{% set upcoming_tests = upcoming_tests|default([]) %}
-{% set past_tests = past_tests|default([]) %}
-
 <!-- Info Box -->
 <div class="info-box">
-    <div class="info-title">Statistics Dashboard</div>
+    <div class="info-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#92c1ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+        </svg>
+    </div>
     <div class="info-content">
-        Track your study progress and monitor your improvement for each upcoming test. See detailed analytics of your study habits over time to optimize your learning.
+        <div class="info-title">Meow-velous Statistics</div>
+        <div class="info-text">Track your study progress and monitor improvements for each test. See detailed analytics to optimize your learning journey!</div>
+    </div>
+    <div class="cat-paw">
+        <svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#b8a4f4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="4.5" cy="6.5" r="2.5"></circle>
+            <circle cx="10.5" cy="6.5" r="2.5"></circle>
+            <circle cx="4.5" cy="12.5" r="2.5"></circle>
+            <circle cx="10.5" cy="12.5" r="2.5"></circle>
+            <path d="M16 20c3.333-3.333 4-10 4-10H8s.667 6.667 4 10a2.999 2.999 0 0 0 4 0z"></path>
+        </svg>
     </div>
 </div>
 
 <!-- Summary Stats Cards -->
 <div class="summary-stats">
     <div class="summary-card">
-        <div class="summary-icon">📚</div>
+        <div class="summary-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#9687db" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+            </svg>
+        </div>
         <div class="summary-value">{{ stats_summary.total_tests }}</div>
         <div class="summary-label">Total Tests</div>
     </div>
     <div class="summary-card">
-        <div class="summary-icon">📝</div>
+        <div class="summary-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#9687db" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+        </div>
         <div class="summary-value">{{ stats_summary.total_topics }}</div>
         <div class="summary-label">Total Topics</div>
     </div>
     <div class="summary-card">
-        <div class="summary-icon">✅</div>
+        <div class="summary-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#9687db" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+        </div>
         <div class="summary-value">{{ stats_summary.completed_resources }}/{{ stats_summary.total_resources }}</div>
         <div class="summary-label">Resources Completed</div>
     </div>
     <div class="summary-card">
-        <div class="summary-icon">📊</div>
+        <div class="summary-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#9687db" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M12 6v6l4 2"></path>
+            </svg>
+        </div>
         <div class="summary-value">{{ stats_summary.overall_completion }}%</div>
         <div class="summary-label">Overall Completion</div>
     </div>
@@ -54,7 +86,7 @@
 
 <!-- Stats Grid -->
 <div class="stats-grid">
-    <!-- Daily Progress Card -->
+    <!-- Daily Progress Chart -->
     <div class="stats-card wide">
         <div class="card-header">
             <h2 class="card-title daily">Daily Study Progress</h2>
@@ -63,17 +95,53 @@
             {% if date_progress and date_progress|length > 0 %}
                 <canvas id="dailyProgressChart"></canvas>
             {% else %}
-                <div class="no-data-message">No daily progress data recorded yet. Start tracking your progress!</div>
+                <div class="no-data-message">
+                    <div class="no-data-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="#b8a4f4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="20" x2="18" y2="10"></line>
+                            <line x1="12" y1="20" x2="12" y2="4"></line>
+                            <line x1="6" y1="20" x2="6" y2="14"></line>
+                        </svg>
+                    </div>
+                    <p>No daily progress data recorded yet.</p>
+                    <p>Start tracking your study journey!</p>
+                    <div class="cat-sleeping">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#92c1ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"></path>
+                            <path d="M8 9h1"></path>
+                            <path d="M15 9h1"></path>
+                            <path d="M19 6c-1.5 5.5-3.5 7-5.5 8-.25.25-.25.5-.5.5s-.75.5-.75-.5c0-1.5.5-2.5.5-4 0-.25-.5-.25-.5 0A5.5 5.5 0 0 1 9 14c-1 0-2.5-.5-4-2-2-2-2-3-3-5.5"></path>
+                            <path d="M7 15c1.5.5 3 .5 4.5 0"></path>
+                        </svg>
+                    </div>
+                </div>
             {% endif %}
-            <div class="chart-corner top-left">✨</div>
-            <div class="chart-corner top-right">🌟</div>
-            <div class="chart-corner bottom-left">⭐</div>
-            <div class="chart-corner bottom-right">✨</div>
         </div>
-        <div class="cat-paw">🐾</div>
+        
+        <div class="chart-corner top-right">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#b8a4f4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <circle cx="12" cy="12" r="6"></circle>
+                <circle cx="12" cy="12" r="2"></circle>
+            </svg>
+        </div>
+        <div class="chart-corner bottom-left">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#b8a4f4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
+      
+        <div class="cat-paw">
+            <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#b8a4f4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="4.5" cy="6.5" r="2.5"></circle>
+                <circle cx="10.5" cy="6.5" r="2.5"></circle>
+                <circle cx="4.5" cy="12.5" r="2.5"></circle>
+                <circle cx="10.5" cy="12.5" r="2.5"></circle>
+                <path d="M16 20c3.333-3.333 4-10 4-10H8s.667 6.667 4 10a2.999 2.999 0 0 0 4 0z"></path>
+            </svg>
+        </div>
     </div>
 
-    <!-- Subject Progress Card -->
+    <!-- Subject Progress Chart -->
     <div class="stats-card">
         <div class="card-header">
             <h2 class="card-title subjects">Progress By Subject</h2>
@@ -81,18 +149,70 @@
         <div class="chart-container">
             {% if subject_completion and subject_completion.values()|selectattr('total', 'gt', 0)|list|length > 0 %}
                 <canvas id="subjectProgressChart"></canvas>
+                <div class="chart-tooltip">
+                   
+                    Hover over chart sections for details
+                </div>
             {% else %}
-                <div class="no-data-message">No subject data available yet. Add resources to your subjects!</div>
+                <div class="no-data-message">
+                    <div class="no-data-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="#b8a4f4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                        </svg>
+                    </div>
+                    <p>No subject data available yet.</p>
+                    <p>Add resources to your subjects!</p>
+                    <div class="cat-curious">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#92c1ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M8 15h2"></path>
+                            <path d="M14 15h2"></path>
+                            <path d="M6 9h.01"></path>
+                            <path d="M18 9h.01"></path>
+                            <path d="M12 2a2 2 0 0 0 2 2 2 2 0 0 0-2 2"></path>
+                            <path d="M12 22a2 2 0 0 1 2-2 2 2 0 0 1-2-2"></path>
+                        </svg>
+                    </div>
+                </div>
             {% endif %}
-            <div class="chart-corner top-left">✨</div>
-            <div class="chart-corner top-right">🌟</div>
-            <div class="chart-corner bottom-left">⭐</div>
-            <div class="chart-corner bottom-right">✨</div>
         </div>
-        <div class="cat-paw">🐾</div>
+        <div class="chart-corner top-left">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#92c1ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
+        </div>
+        <div class="chart-corner top-right">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#b8a4f4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <circle cx="12" cy="12" r="6"></circle>
+                <circle cx="12" cy="12" r="2"></circle>
+            </svg>
+        </div>
+        <div class="chart-corner bottom-left">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#b8a4f4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
+        </div>
+        <div class="chart-corner bottom-right">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#92c1ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <circle cx="12" cy="12" r="6"></circle>
+                <circle cx="12" cy="12" r="2"></circle>
+            </svg>
+        </div>
+        <div class="cat-paw">
+            <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#b8a4f4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="4.5" cy="6.5" r="2.5"></circle>
+                <circle cx="10.5" cy="6.5" r="2.5"></circle>
+                <circle cx="4.5" cy="12.5" r="2.5"></circle>
+                <circle cx="10.5" cy="12.5" r="2.5"></circle>
+                <path d="M16 20c3.333-3.333 4-10 4-10H8s.667 6.667 4 10a2.999 2.999 0 0 0 4 0z"></path>
+            </svg>
+        </div>
     </div>
 
-    <!-- Test Score Trends Card -->
+    <!-- Score Progress Chart -->
     <div class="stats-card">
         <div class="card-header">
             <h2 class="card-title score-trends">Test Progress</h2>
@@ -101,14 +221,61 @@
             {% if subject_performance and subject_performance.values()|selectattr('tests', 'gt', 0)|list|length > 0 %}
                 <canvas id="scoreProgressChart"></canvas>
             {% else %}
-                <div class="no-data-message">No progress data available yet. Add tests to your subjects!</div>
+                <div class="no-data-message">
+                    <div class="no-data-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="#b8a4f4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                            <polyline points="10 9 9 9 8 9"></polyline>
+                        </svg>
+                    </div>
+                    <p>No progress data available yet.</p>
+                    <p>Add tests to your subjects!</p>
+                    <div class="cat-thinking">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#92c1ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 22c1.5 0 2.5-1.5 2.5-1.5.5-1 .5-4.5-1-6.5s-4-2.5-4.5-2 .5 2-1 3.5c-1.5 1.5-2 2-2 4C6 21 9 22 12 22z"></path>
+                            <path d="M12 17c0 .5-.5 1-1 1s-1-.5-1-1a1 1 0 0 1 2 0z"></path>
+                            <path d="M18 4c-1.85-1.05-3-1-4.5-.5-1.95.65-2.7 3.15-4 4-1.33.88-2.8.75-4 1.5-1 .63-1.5 1.5-1.5 2.5 0 .5 0 .5 .5 1s1 .5 1.5 0a3 3 0 0 0 0-1c0-.5 1-1 2-1s2.27.31 3 1c1 .94 1 2.5 1 2.5"></path>
+                        </svg>
+                    </div>
+                </div>
             {% endif %}
-            <div class="chart-corner top-left">✨</div>
-            <div class="chart-corner top-right">🌟</div>
-            <div class="chart-corner bottom-left">⭐</div>
-            <div class="chart-corner bottom-right">✨</div>
         </div>
-        <div class="cat-paw">🐾</div>
+        <div class="chart-corner top-left">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#92c1ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
+        </div>
+        <div class="chart-corner top-right">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#b8a4f4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <circle cx="12" cy="12" r="6"></circle>
+                <circle cx="12" cy="12" r="2"></circle>
+            </svg>
+        </div>
+        <div class="chart-corner bottom-left">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#b8a4f4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
+        </div>
+        <div class="chart-corner bottom-right">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#92c1ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <circle cx="12" cy="12" r="6"></circle>
+                <circle cx="12" cy="12" r="2"></circle>
+            </svg>
+        </div>
+        <div class="cat-paw">
+            <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#b8a4f4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="4.5" cy="6.5" r="2.5"></circle>
+                <circle cx="10.5" cy="6.5" r="2.5"></circle>
+                <circle cx="4.5" cy="12.5" r="2.5"></circle>
+                <circle cx="10.5" cy="12.5" r="2.5"></circle>
+                <path d="M16 20c3.333-3.333 4-10 4-10H8s.667 6.667 4 10a2.999 2.999 0 0 0 4 0z"></path>
+            </svg>
+        </div>
     </div>
 
     <!-- Upcoming Tests Card -->
@@ -121,6 +288,24 @@
                 {% for test in upcoming_tests %}
                     <div class="upcoming-test-card">
                         <div class="upcoming-test-header">
+                            <div class="test-status-icon">
+                                {% if test.progress < 25 %}
+                                    <svg class="status-icon status-low" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffb3c0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                                    </svg>
+                                {% elif test.progress < 75 %}
+                                    <svg class="status-icon status-medium" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffe0c4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
+                                    </svg>
+                                {% else %}
+                                    <svg class="status-icon status-high" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a8e1d1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                    </svg>
+                                {% endif %}
+                            </div>
                             <div class="upcoming-test-title">{{ test.name }}</div>
                             <div class="upcoming-test-date">{{ test.date }}</div>
                         </div>
@@ -130,15 +315,73 @@
                             <span class="upcoming-test-progress-label">{{ test.progress }}%</span>
                         </div>
                         <div class="upcoming-test-actions">
-                            <a href="{{ url_for('track_progress', subject_name=test.subject_name, test_id=test.id) }}" class="upcoming-test-btn">Track</a>
+                            <a href="{{ url_for('track_progress', subject_name=test.subject_name, test_id=test.id) }}" class="upcoming-test-btn">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                                Track
+                            </a>
                         </div>
                     </div>
                 {% endfor %}
             </div>
         {% else %}
-            <div class="no-data-message">No upcoming tests scheduled for the next week. Plan your studies!</div>
+            <div class="no-data-message">
+                <div class="no-data-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="#b8a4f4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="16" y1="2" x2="16" y2="6"></line>
+                        <line x1="8" y1="2" x2="8" y2="6"></line>
+                        <line x1="3" y1="10" x2="21" y2="10"></line>
+                    </svg>
+                </div>
+                <p>No upcoming tests scheduled for the next week.</p>
+                <p>Plan your studies!</p>
+                <div class="cat-relaxed">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#92c1ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
+                        <line x1="9" y1="9" x2="9.01" y2="9"></line>
+                        <line x1="15" y1="9" x2="15.01" y2="9"></line>
+                        <path d="M10 4.5c1 0 2 .5 2 2 0 .5-2 2-2 2s-2-1.5-2-2c0-1.5 1-2 2-2z"></path>
+                    </svg>
+                </div>
+            </div>
         {% endif %}
-        <div class="cat-paw">🐾</div>
+        <div class="chart-corner top-left">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#92c1ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
+        </div>
+        <div class="chart-corner top-right">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#b8a4f4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <circle cx="12" cy="12" r="6"></circle>
+                <circle cx="12" cy="12" r="2"></circle>
+            </svg>
+        </div>
+        <div class="chart-corner bottom-left">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#b8a4f4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
+        </div>
+        <div class="chart-corner bottom-right">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#92c1ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <circle cx="12" cy="12" r="6"></circle>
+                <circle cx="12" cy="12" r="2"></circle>
+            </svg>
+        </div>
+        <div class="cat-paw">
+            <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#b8a4f4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="4.5" cy="6.5" r="2.5"></circle>
+                <circle cx="10.5" cy="6.5" r="2.5"></circle>
+                <circle cx="4.5" cy="12.5" r="2.5"></circle>
+                <circle cx="10.5" cy="12.5" r="2.5"></circle>
+                <path d="M16 20c3.333-3.333 4-10 4-10H8s.667 6.667 4 10a2.999 2.999 0 0 0 4 0z"></path>
+            </svg>
+        </div>
     </div>
 
     <!-- All Tests Table -->
@@ -171,7 +414,13 @@
                                     </div>
                                 </td>
                                 <td>
-                                    <a href="{{ url_for('track_progress', subject_name=test.subject_name, test_id=test.id) }}" class="table-action-btn">Track</a>
+                                    <a href="{{ url_for('track_progress', subject_name=test.subject_name, test_id=test.id) }}" class="table-action-btn">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+                                            <circle cx="12" cy="12" r="3"></circle>
+                                        </svg>
+                                        Track
+                                    </a>
                                 </td>
                             </tr>
                         {% endfor %}
@@ -179,27 +428,114 @@
                 </table>
             </div>
         {% else %}
-            <div class="no-data-message">No tests available yet. Add tests to your subjects!</div>
+            <div class="no-data-message">
+                <div class="no-data-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="#b8a4f4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                </div>
+                <p>No tests available yet.</p>
+                <p>Add tests to your subjects!</p>
+                <div class="cat-asleep">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#92c1ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M12 8v1"></path>
+                        <path d="M12 12v1"></path>
+                        <path d="M12 16v1"></path>
+                        <path d="M16 11.37a4 4 0 1 1-8 0"></path>
+                        <path d="M8 12c-1.5 0-2.5-2-1.5-3"></path>
+                        <path d="M16 12c1.5 0 2.5-2 1.5-3"></path>
+                    </svg>
+                </div>
+            </div>
         {% endif %}
-        <div class="cat-paw">🐾</div>
+        <div class="chart-corner top-left">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#92c1ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
+        </div>
+        <div class="chart-corner top-right">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#b8a4f4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <circle cx="12" cy="12" r="6"></circle>
+                <circle cx="12" cy="12" r="2"></circle>
+            </svg>
+        </div>
+        <div class="chart-corner bottom-left">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#b8a4f4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
+        </div>
+        <div class="chart-corner bottom-right">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#92c1ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <circle cx="12" cy="12" r="6"></circle>
+                <circle cx="12" cy="12" r="2"></circle>
+            </svg>
+        </div>
+        <div class="cat-paw">
+            <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#b8a4f4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="4.5" cy="6.5" r="2.5"></circle>
+                <circle cx="10.5" cy="6.5" r="2.5"></circle>
+                <circle cx="4.5" cy="12.5" r="2.5"></circle>
+                <circle cx="10.5" cy="12.5" r="2.5"></circle>
+                <path d="M16 20c3.333-3.333 4-10 4-10H8s.667 6.667 4 10a2.999 2.999 0 0 0 4 0z"></path>
+            </svg>
+        </div>
     </div>
-
+</div>
 
 <!-- Back to Home Link -->
-<a href="{{ url_for('index') }}" class="back-button">Back to Dashboard</a>
+<a href="{{ url_for('index') }}" class="back-button">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+    </svg>
+    Back to Dashboard
+</a>
 {% endblock %}
 
 {% block extra_css %}
 <style>
+    /* Info Box */
     .info-box {
         background-color: rgba(255, 255, 255, 0.8);
         border-radius: 15px;
         padding: 20px;
-        border: 3px solid var(--dark);
-        box-shadow: 5px 5px 0 var(--dark);
-        margin-bottom: 25px;
+        margin: 20px 0 30px;
+        display: flex;
+        align-items: center;
         position: relative;
+        border: 3px solid var(--dark);
+        box-shadow: 5px 5px 0 var(--primary-light);
+        overflow: hidden;
         backdrop-filter: blur(5px);
+    }
+
+    .info-icon {
+        background-color: var(--secondary);
+        width: 60px;
+        height: 60px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 20px;
+        color: white;
+        border: 2px solid var(--dark);
+        box-shadow: 3px 3px 0 var(--dark);
+        position: relative;
+        z-index: 2;
+    }
+
+    .info-content {
+        flex: 1;
+        position: relative;
+        z-index: 2;
     }
 
     .info-title {
@@ -207,21 +543,35 @@
         font-size: 1.8rem;
         color: var(--secondary);
         margin-bottom: 10px;
+        letter-spacing: 1px;
     }
 
-    .info-content {
+    .info-text {
         font-family: 'Comic Neue', cursive;
         font-size: 1.1rem;
         line-height: 1.5;
+        color: var(--dark);
     }
 
-    .stats-title-container {
-        position: relative;
-        padding: 15px 0;
-        margin-bottom: 20px;
-        text-align: center;
+    .cat-paw {
+        position: absolute;
+        bottom: -15px;
+        right: -15px;
+        width: 32px;
+        height: 32px;
+        transform: rotate(15deg);
+        z-index: 2;
+        filter: drop-shadow(1px 1px 1px rgba(0,0,0,0.2));
+        animation: float-animation 3s ease-in-out infinite;
     }
 
+    /* Animations */
+    @keyframes float-animation {
+        0%, 100% { transform: translateY(0) rotate(15deg); }
+        50% { transform: translateY(-5px) rotate(18deg); }
+    }
+
+    /* Summary Stats */
     .summary-stats {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
@@ -230,23 +580,39 @@
     }
 
     .summary-card {
-        background-color: rgba(255, 255, 255, 0.8);
-        padding: 20px;
+        background-color: rgba(255, 255, 255, 0.7);
         border-radius: 15px;
+        padding: 15px 10px;
         text-align: center;
-        border: 3px solid var(--dark);
-        box-shadow: 3px 3px 0 var(--dark);
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         transition: all 0.3s ease;
+        border: 1px solid rgba(169, 149, 239, 0.2);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+        overflow: hidden;
     }
 
     .summary-card:hover {
         transform: translateY(-5px);
-        box-shadow: 5px 5px 0 var(--dark);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.08);
     }
 
     .summary-icon {
-        font-size: 2.2rem;
         margin-bottom: 5px;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--primary);
+    }
+
+    .summary-icon svg {
+        width: 32px;
+        height: 32px;
     }
 
     .summary-value {
@@ -254,6 +620,7 @@
         font-size: 2.5rem;
         color: var(--secondary);
         margin-bottom: 5px;
+        letter-spacing: 1px;
     }
 
     .summary-label {
@@ -262,25 +629,35 @@
         color: var(--dark);
     }
 
+    /* Stats Grid */
     .stats-grid {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
-        gap: 20px;
+        gap: 25px;
         margin-top: 30px;
     }
 
     .stats-card {
-        background-color: rgba(255, 255, 255, 0.8);
-        border-radius: 15px;
+        background-color: var(--widget-bg);
+        border-radius: 16px;
         padding: 20px;
-        box-shadow: 5px 5px 0 var(--dark);
-        border: 3px solid var(--dark);
+        border: none;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
         position: relative;
         backdrop-filter: blur(5px);
+        transition: all 0.3s ease;
+        overflow: hidden;
+        min-height: 350px;
+    }
+
+    .stats-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.08);
     }
 
     .stats-card.wide {
         grid-column: span 2;
+        width: 100%;
     }
 
     .card-header {
@@ -289,7 +666,7 @@
         align-items: center;
         margin-bottom: 15px;
         padding-bottom: 10px;
-        border-bottom: 2px dashed var(--primary-light);
+        border-bottom: 1px solid rgba(169, 149, 239, 0.2);
     }
 
     .card-title {
@@ -308,120 +685,206 @@
     }
 
     .card-title.daily::before {
-        content: "📅";
+        content: "";
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23546079' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='2' ry='2'%3E%3C/rect%3E%3Cline x1='16' y1='2' x2='16' y2='6'%3E%3C/line%3E%3Cline x1='8' y1='2' x2='8' y2='6'%3E%3C/line%3E%3Cline x1='3' y1='10' x2='21' y2='10'%3E%3C/line%3E%3C/svg%3E");
+        display: inline-block;
+        width: 22px;
+        height: 22px;
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: contain;
     }
 
     .card-title.subjects::before {
-        content: "📚";
-    }
-
-    .card-title.test-comparison::before {
-        content: "📝";
+        content: "";
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23546079' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 19.5A2.5 2.5 0 0 1 6.5 17H20'%3E%3C/path%3E%3Cpath d='M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z'%3E%3C/path%3E%3C/svg%3E");
+        display: inline-block;
+        width: 22px;
+        height: 22px;
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: contain;
     }
 
     .card-title.score-trends::before {
-        content: "🏆";
-    }
-
-    .card-title.streak::before {
-        content: "🔥";
+        content: "";
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23546079' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='22 7 13.5 15.5 8.5 10.5 2 17'%3E%3C/polyline%3E%3Cpolyline points='16 7 22 7 22 13'%3E%3C/polyline%3E%3C/svg%3E");
+        display: inline-block;
+        width: 22px;
+        height: 22px;
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: contain;
     }
 
     .card-title.upcoming::before {
-        content: "🗓️";
+        content: "";
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23546079' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='2' ry='2'%3E%3C/rect%3E%3Cline x1='16' y1='2' x2='16' y2='6'%3E%3C/line%3E%3Cline x1='8' y1='2' x2='8' y2='6'%3E%3C/line%3E%3Cline x1='3' y1='10' x2='21' y2='10'%3E%3C/line%3E%3C/svg%3E");
+        display: inline-block;
+        width: 22px;
+        height: 22px;
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: contain;
     }
 
     .card-title.all-tests::before {
-        content: "📋";
+        content: "";
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23546079' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'%3E%3C/path%3E%3Cpolyline points='14 2 14 8 20 8'%3E%3C/polyline%3E%3Cline x1='16' y1='13' x2='8' y2='13'%3E%3C/line%3E%3Cline x1='16' y1='17' x2='8' y2='17'%3E%3C/line%3E%3Cpolyline points='10 9 9 9 8 9'%3E%3C/polyline%3E%3C/svg%3E");
+        display: inline-block;
+        width: 22px;
+        height: 22px;
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: contain;
     }
 
+    /* Chart Container */
     .chart-container {
+        width: 100%;
         height: 300px;
         position: relative;
+        margin: 20px 0;
+        z-index: 2;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
     }
 
-    .no-data-message {
-        height: 100%;
+    .chart-tooltip {
         display: flex;
-        justify-content: center;
         align-items: center;
-        text-align: center;
+        justify-content: center;
+        font-size: 0.9rem;
         font-style: italic;
         color: var(--dark);
-        padding: 20px;
+        margin-top: 10px;
+    }
+
+    .chart-tooltip svg {
+        margin-right: 5px;
+    }
+
+    /* Chart Decorations */
+    .chart-corner {
+        position: absolute;
+        z-index: 1;
+        width: 24px;
+        height: 24px;
+        opacity: 0.7;
+        animation: pulse 3s infinite;
+    }
+    
+    @keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-5px); }
+    }
+
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); opacity: 0.7; }
+        50% { transform: scale(1.1); opacity: 0.9; }
+    }
+
+    .chart-corner.top-left {
+        top: 10px;
+        left: 10px;
+    }
+
+    .chart-corner.top-right {
+        top: 10px;
+        right: 10px;
+    }
+
+    .chart-corner.bottom-left {
+        bottom: 10px;
+        left: 10px;
+    }
+
+    .chart-corner.bottom-right {
+        bottom: 10px;
+        right: 10px;
+    }
+
+    /* No Data Message */
+    .no-data-message {
+        text-align: center;
+        padding: 30px;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
         background-color: rgba(255, 255, 255, 0.5);
         border-radius: 10px;
         border: 1px dashed var(--primary);
     }
 
-    .metrics-container {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 15px;
-        margin-top: 10px;
+    .no-data-icon {
+        margin-bottom: 15px;
+        opacity: 0.7;
     }
 
-    .metric-box {
-        background-color: rgba(255, 255, 255, 0.7);
-        border-radius: 10px;
-        padding: 15px;
-        text-align: center;
-        border: 2px solid var(--primary-light);
-    }
-
-    .metric-value {
-        font-size: 2rem;
-        font-weight: bold;
-        color: var(--secondary-dark);
-        margin-bottom: 5px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .metric-value::before {
-        margin-right: 5px;
-    }
-
-    .metric-label {
-        font-size: 0.9rem;
+    .no-data-message p {
+        font-family: 'Crafty Girls', cursive;
+        font-size: 1.1rem;
         color: var(--dark);
+        margin: 5px 0;
     }
 
-    .metric-value.completed::before {
-        content: "✅";
+    .cat-sleeping, .cat-curious, .cat-thinking, .cat-relaxed, .cat-asleep {
+        margin-top: 15px;
+        opacity: 0.8;
     }
 
-    .metric-value.streak::before {
-        content: "🔥";
+    /* Status Icons */
+    .test-status-icon {
+        margin-right: 10px;
     }
 
-    .metric-value.average::before {
-        content: "🏆";
+    .status-icon {
+        border-radius: 50%;
+        padding: 2px;
     }
 
-    .metric-value.upcoming::before {
-        content: "🗓️";
+    .status-low {
+        background-color: rgba(255, 179, 192, 0.2);
     }
 
-    /* Upcoming tests styling */
+    .status-medium {
+        background-color: rgba(255, 224, 196, 0.2);
+    }
+
+    .status-high {
+        background-color: rgba(168, 225, 209, 0.2);
+    }
+
+    /* Upcoming Tests */
     .upcoming-tests-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
         gap: 15px;
+        max-height: 350px;
+        overflow-y: auto;
+        padding-right: 5px;
+        width: 100%;
     }
 
     .upcoming-test-card {
         background-color: rgba(255, 255, 255, 0.7);
-        border-radius: 10px;
+        border-radius: 12px;
         padding: 15px;
         border: 2px solid var(--primary-light);
+        margin-bottom: 6px;
+        position: relative;
         transition: all 0.3s ease;
     }
 
     .upcoming-test-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        transform: translateX(3px);
+        background-color: rgba(224, 216, 255, 0.2);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.06);
+        border-left: 3px solid var(--primary);
     }
 
     .upcoming-test-header {
@@ -441,7 +904,7 @@
         font-size: 0.9rem;
         background-color: var(--primary-light);
         padding: 3px 8px;
-        border-radius: 8px;
+        border-radius: 10px;
         color: var(--primary-dark);
     }
 
@@ -483,7 +946,8 @@
     }
 
     .upcoming-test-btn {
-        display: inline-block;
+        display: inline-flex;
+        align-items: center;
         padding: 5px 10px;
         background-color: var(--secondary);
         color: white;
@@ -493,19 +957,32 @@
         transition: all 0.2s ease;
     }
 
+    .upcoming-test-btn svg {
+        margin-right: 5px;
+    }
+
     .upcoming-test-btn:hover {
         background-color: var(--secondary-dark);
         transform: translateY(-2px);
     }
 
-    /* Tests table styling */
+    /* Tests Table */
     .tests-table-container {
-        overflow-x: auto;
+        max-height: 350px;
+        overflow-y: auto;
     }
 
     .tests-table {
         width: 100%;
-        border-collapse: collapse;
+        border-collapse: separate;
+        border-spacing: 0 5px;
+        table-layout: fixed;
+    }
+
+    .tests-table th, .tests-table td {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
     .tests-table th {
@@ -560,7 +1037,8 @@
     }
 
     .table-action-btn {
-        display: inline-block;
+        display: inline-flex;
+        align-items: center;
         padding: 3px 8px;
         background-color: var(--secondary);
         color: white;
@@ -574,6 +1052,7 @@
         background-color: var(--secondary-dark);
     }
 
+    /* Back Button */
     .back-button {
         background-color: var(--secondary);
         color: white;
@@ -582,7 +1061,6 @@
         border-radius: 10px;
         font-family: 'Bangers', cursive;
         font-size: 1.1rem;
-        cursor: pointer;
         letter-spacing: 1px;
         transition: all 0.3s ease;
         display: flex;
@@ -590,54 +1068,55 @@
         width: fit-content;
         margin: 30px auto;
         text-decoration: none;
+        box-shadow: 3px 3px 0 var(--dark);
     }
 
-    .back-button::before {
-        content: "🏠";
+    .back-button svg {
         margin-right: 8px;
     }
 
     .back-button:hover {
         background-color: var(--secondary-dark);
         transform: translateY(-3px) rotate(-2deg);
-        box-shadow: 3px 3px 0 var(--dark);
+        box-shadow: 5px 5px 0 var(--dark);
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: rgba(240, 240, 240, 0.5);
+        border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: var(--primary-light);
+        border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: var(--primary);
+    }
+
+    /* Animations */
+    @keyframes float-animation {
+        0%, 100% { transform: translateY(0) rotate(0); }
+        50% { transform: translateY(-5px) rotate(3deg); }
     }
 
     .cat-paw {
-        position: absolute;
-        bottom: -15px;
-        right: -15px;
-        font-size: 1.8rem;
-        transform: rotate(15deg);
+        animation: float-animation 3s ease-in-out infinite;
     }
 
-    .chart-corner {
-        position: absolute;
-        font-size: 1.5rem;
-        z-index: 1;
-    }
-
-    .chart-corner.top-left {
-        top: 5px;
-        left: 5px;
-    }
-
-    .chart-corner.top-right {
-        top: 5px;
-        right: 5px;
-    }
-
-    .chart-corner.bottom-left {
-        bottom: 5px;
-        left: 5px;
-    }
-
-    .chart-corner.bottom-right {
-        bottom: 5px;
-        right: 5px;
-    }
-
+    /* Responsive Design */
     @media (max-width: 992px) {
+        .summary-stats {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
         .stats-grid {
             grid-template-columns: 1fr;
         }
@@ -646,18 +1125,25 @@
             grid-column: span 1;
         }
 
-        .summary-stats {
-            grid-template-columns: repeat(2, 1fr);
+        .info-box {
+            flex-direction: column;
+            text-align: center;
         }
 
-        .metrics-container {
-            grid-template-columns: repeat(2, 1fr);
+        .info-icon {
+            margin-right: 0;
+            margin-bottom: 15px;
         }
     }
 
     @media (max-width: 576px) {
         .summary-stats {
             grid-template-columns: 1fr;
+        }
+
+        .tests-table {
+            display: block;
+            overflow-x: auto;
         }
     }
 </style>
@@ -666,16 +1152,26 @@
 {% block extra_scripts %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Set Chart.js defaults to match our theme
+        // Set Chart.js defaults
         Chart.defaults.font.family = "'Comic Neue', cursive";
         Chart.defaults.font.size = 14;
-        Chart.defaults.color = "#333";
-        Chart.defaults.borderColor = "rgba(106, 90, 205, 0.2)";
+        Chart.defaults.color = "#546079";
+        Chart.defaults.borderColor = "rgba(184, 164, 244, 0.2)";
+        
+        // Apply custom animations
+        Chart.defaults.animation = {
+            duration: 1500,
+            easing: 'easeOutQuart'
+        };
 
         // Daily Progress Chart
         {% if date_progress and date_progress|length > 0 %}
             const dailyCtx = document.getElementById('dailyProgressChart').getContext('2d');
             if (dailyCtx) {
+                const gradient = dailyCtx.createLinearGradient(0, 0, 0, 300);
+                gradient.addColorStop(0, 'rgba(146, 193, 255, 0.7)');
+                gradient.addColorStop(1, 'rgba(146, 193, 255, 0.1)');
+                
                 const dailyProgressChart = new Chart(dailyCtx, {
                     type: 'line',
                     data: {
@@ -683,13 +1179,15 @@
                         datasets: [{
                             label: 'Resources Completed',
                             data: [{% for date, count in date_progress %}{{ count }}{% if not loop.last %}, {% endif %}{% endfor %}],
-                            backgroundColor: 'rgba(106, 90, 205, 0.2)',
-                            borderColor: 'rgba(106, 90, 205, 1)',
-                            borderWidth: 2,
-                            tension: 0.3,
-                            pointBackgroundColor: 'rgba(106, 90, 205, 1)',
-                            pointBorderColor: '#fff',
-                            pointRadius: 4,
+                            backgroundColor: gradient,
+                            borderColor: 'rgba(146, 193, 255, 1)',
+                            borderWidth: 3,
+                            tension: 0.4,
+                            pointBackgroundColor: '#fff',
+                            pointBorderColor: 'rgba(146, 193, 255, 1)',
+                            pointBorderWidth: 2,
+                            pointRadius: 5,
+                            pointHoverRadius: 7,
                             fill: true
                         }]
                     },
@@ -700,19 +1198,47 @@
                             y: {
                                 beginAtZero: true,
                                 ticks: {
-                                    stepSize: 1
+                                    stepSize: 1,
+                                    font: {
+                                        weight: 'bold'
+                                    }
+                                },
+                                grid: {
+                                    color: 'rgba(184, 164, 244, 0.1)',
+                                    drawBorder: false
                                 }
                             },
                             x: {
                                 ticks: {
                                     maxRotation: 45,
-                                    minRotation: 45
+                                    minRotation: 45,
+                                    font: {
+                                        weight: 'bold'
+                                    }
+                                },
+                                grid: {
+                                    display: false
                                 }
                             }
                         },
                         plugins: {
                             legend: {
                                 display: false
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                                titleFont: {
+                                    size: 14,
+                                    weight: 'bold',
+                                    family: "'Comic Neue', cursive"
+                                },
+                                bodyFont: {
+                                    size: 14,
+                                    family: "'Comic Neue', cursive"
+                                },
+                                padding: 12,
+                                cornerRadius: 8,
+                                displayColors: false
                             }
                         }
                     }
@@ -750,42 +1276,56 @@
                             datasets: [{
                                 data: subjectData.data,
                                 backgroundColor: [
-                                    'rgba(255, 95, 143, 0.7)',
-                                    'rgba(106, 90, 205, 0.7)',
-                                    'rgba(102, 187, 106, 0.7)',
-                                    'rgba(255, 159, 64, 0.7)',
-                                    'rgba(123, 31, 162, 0.7)',
-                                    'rgba(0, 188, 212, 0.7)',
-                                    'rgba(255, 87, 34, 0.7)',
-                                    'rgba(76, 175, 80, 0.7)'
+                                    'rgba(184, 164, 244, 0.7)',
+                                    'rgba(146, 193, 255, 0.7)',
+                                    'rgba(168, 225, 209, 0.7)',
+                                    'rgba(255, 212, 229, 0.7)',
+                                    'rgba(255, 179, 192, 0.7)',
+                                    'rgba(255, 224, 196, 0.7)'
                                 ],
                                 borderColor: [
-                                    'rgba(255, 95, 143, 1)',
-                                    'rgba(106, 90, 205, 1)',
-                                    'rgba(102, 187, 106, 1)',
-                                    'rgba(255, 159, 64, 1)',
-                                    'rgba(123, 31, 162, 1)',
-                                    'rgba(0, 188, 212, 1)',
-                                    'rgba(255, 87, 34, 1)',
-                                    'rgba(76, 175, 80, 1)'
+                                    'rgba(184, 164, 244, 1)',
+                                    'rgba(146, 193, 255, 1)',
+                                    'rgba(168, 225, 209, 1)',
+                                    'rgba(255, 212, 229, 1)',
+                                    'rgba(255, 179, 192, 1)',
+                                    'rgba(255, 224, 196, 1)'
                                 ],
-                                borderWidth: 1
+                                borderWidth: 2,
+                                borderRadius: 5,
+                                hoverOffset: 15
                             }]
                         },
                         options: {
                             responsive: true,
                             maintainAspectRatio: false,
+                            cutout: '65%',
                             plugins: {
                                 legend: {
                                     position: 'right',
                                     labels: {
-                                        padding: 20,
+                                        padding: 15,
                                         font: {
+                                            family: "'Comic Neue', cursive",
                                             size: 12
-                                        }
+                                        },
+                                        usePointStyle: true,
+                                        pointStyle: 'circle'
                                     }
                                 },
                                 tooltip: {
+                                    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                                    titleFont: {
+                                        size: 14,
+                                        weight: 'bold',
+                                        family: "'Comic Neue', cursive"
+                                    },
+                                    bodyFont: {
+                                        size: 14,
+                                        family: "'Comic Neue', cursive"
+                                    },
+                                    padding: 12,
+                                    cornerRadius: 8,
                                     callbacks: {
                                         label: function(context) {
                                             const index = context.dataIndex;
@@ -833,23 +1373,25 @@
                                 label: 'Average Progress',
                                 data: perfData.progress,
                                 backgroundColor: [
-                                    'rgba(255, 99, 132, 0.7)',
-                                    'rgba(54, 162, 235, 0.7)',
-                                    'rgba(255, 206, 86, 0.7)',
-                                    'rgba(75, 192, 192, 0.7)',
-                                    'rgba(153, 102, 255, 0.7)',
-                                    'rgba(255, 159, 64, 0.7)'
+                                    'rgba(184, 164, 244, 0.7)',
+                                    'rgba(146, 193, 255, 0.7)',
+                                    'rgba(168, 225, 209, 0.7)',
+                                    'rgba(255, 212, 229, 0.7)',
+                                    'rgba(255, 179, 192, 0.7)',
+                                    'rgba(255, 224, 196, 0.7)'
                                 ],
                                 borderColor: [
-                                    'rgba(255, 99, 132, 1)',
-                                    'rgba(54, 162, 235, 1)',
-                                    'rgba(255, 206, 86, 1)',
-                                    'rgba(75, 192, 192, 1)',
-                                    'rgba(153, 102, 255, 1)',
-                                    'rgba(255, 159, 64, 1)'
+                                    'rgba(184, 164, 244, 1)',
+                                    'rgba(146, 193, 255, 1)',
+                                    'rgba(168, 225, 209, 1)',
+                                    'rgba(255, 212, 229, 1)',
+                                    'rgba(255, 179, 192, 1)',
+                                    'rgba(255, 224, 196, 1)'
                                 ],
                                 borderWidth: 2,
-                                borderRadius: 8
+                                borderRadius: 8,
+                                borderSkipped: false,
+                                hoverOffset: 4
                             }]
                         },
                         options: {
@@ -862,7 +1404,24 @@
                                     ticks: {
                                         callback: function(value) {
                                             return value + '%';
+                                        },
+                                        font: {
+                                            weight: 'bold'
                                         }
+                                    },
+                                    grid: {
+                                        color: 'rgba(184, 164, 244, 0.1)',
+                                        drawBorder: false
+                                    }
+                                },
+                                x: {
+                                    ticks: {
+                                        font: {
+                                            weight: 'bold'
+                                        }
+                                    },
+                                    grid: {
+                                        display: false
                                     }
                                 }
                             },
@@ -871,6 +1430,18 @@
                                     display: false
                                 },
                                 tooltip: {
+                                    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                                    titleFont: {
+                                        size: 14,
+                                        weight: 'bold',
+                                        family: "'Comic Neue', cursive"
+                                    },
+                                    bodyFont: {
+                                        size: 14,
+                                        family: "'Comic Neue', cursive"
+                                    },
+                                    padding: 12,
+                                    cornerRadius: 8,
                                     callbacks: {
                                         label: function(context) {
                                             const index = context.dataIndex;
@@ -887,6 +1458,18 @@
                 }
             }
         {% endif %}
+
+        // Add animation to cat paws
+        const catPaws = document.querySelectorAll('.cat-paw');
+        catPaws.forEach((paw, index) => {
+            paw.style.animationDelay = `${index * 0.5}s`;
+        });
+
+        // Add animation to chart corners
+        const chartCorners = document.querySelectorAll('.chart-corner');
+        chartCorners.forEach((corner, index) => {
+            corner.style.animationDelay = `${index * 0.2}s`;
+        });
     });
 </script>
 {% endblock %}
