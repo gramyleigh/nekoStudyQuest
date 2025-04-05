@@ -2300,7 +2300,7 @@ def test_details(subject_name, test_id):
         topic_counts = get_topic_counts(subject_name, test_id)
         
         # Render the test details template
-        return render_template('test_details.html',
+        return render_template('test_statistics.html',
                              subject_name=subject_name,
                              test=test,
                              progress_records=progress_records,
