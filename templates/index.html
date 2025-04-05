@@ -480,12 +480,16 @@
         }
 
         .current-test-item {
+            display: block; /* Changed from div to anchor, so we need display:block */
             background-color: var(--light);
             border-radius: 12px;
             padding: 15px;
             margin-bottom: 12px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.03);
             transition: all 0.3s ease;
+            color: var(--dark); /* Ensure text color stays consistent */
+            text-decoration: none; /* Remove default link underlines */
+            cursor: pointer;
         }
 
         .current-test-item:hover {
@@ -1279,7 +1283,8 @@
 
                     {% if upcoming_tests %}
                         {% for test in upcoming_tests %}
-                            <div class="current-test-item">
+                            <!-- Make the test item a link to the test details page -->
+                            <a href="{{ url_for('subject_details', subject_name=test.subject_name) }}/test/{{ test.test_id }}" class="current-test-item">
                                 <div class="current-test-header">
                                     <div class="current-test-title">{{ test.test_name }}</div>
                                     <div class="current-test-date">{{ test.date }}</div>
@@ -1288,7 +1293,7 @@
                                 <div class="current-test-progress">
                                     <div class="current-test-progress-bar" style="width: {{ test.progress }}%"></div>
                                 </div>
-                            </div>
+                            </a>
                         {% endfor %}
                     {% else %}
                         <div class="empty-state">
