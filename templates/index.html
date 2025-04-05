@@ -1283,13 +1283,11 @@
 
                     {% if upcoming_tests %}
                         {% for test in upcoming_tests %}
-                            <!-- Make the test item a link to the test statistics page -->
-                            <a href="{{ url_for('test_statistics', subject_name=test.subject_name, test_id=test.id) }}" class="current-test-item">
+                            <!-- Make the test item a link to the track progress page with the correct test_id variable -->
+                            <a href="{{ url_for('track_progress', subject_name=test.subject_name, test_id=test.test_id) }}" class="current-test-item">
                                 <div class="current-test-header">
                                     <div class="current-test-title">{{ test.test_name }}</div>
                                     <div class="current-test-date">{{ test.date }}</div>
-                                    <!-- Debug info to see what test_id is being used -->
-                                    <div style="font-size: 0.7em; color: #999;">ID: {{ test.test_id }}</div>
                                 </div>
                                 <div class="current-test-subject">{{ test.subject_name }}</div>
                                 <div class="current-test-progress">
