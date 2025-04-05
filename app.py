@@ -2261,6 +2261,56 @@ def today():
     """Return today's date as a datetime object for use in templates"""
     return datetime.now().date()
 
+
+
+@app.route('/subject/<subject_name>/test/<test_id>', methods=['GET'])
+def test_details(subject_name, test_id):
+    """Show details for a specific test"""
+    # Load details for the subject
+    subject_data = load_subject_details(subject_name)
+
+    # Find the test
+    test = next((t for t in subject_data.get('tests', []) if isinstance(t, dict) and t.get('id') == test_id), None)
+    
+    if test:
+        # Calculate progress
+        test['progress'] = calculate_progress(test, subject_name)
+        
+        # Load progress records
+        progress_records = load_progress_records(subject_name, test_id)
+        
+        # Process resources to include scores
+        for topic in test.get('topics', []):
+            if isinstance(topic, dict) and 'resources' in topic:
+                for resource in topic.get('resources', []):
+                    # Count completed resources
+                    resource['completed'] = len([r for r in progress_records.get('records', [])
+                                              if r.get('resource_id') == resource.get('id')])
+                    
+                    # Add scores if they exist
+                    resource['scores'] = []
+                    for record in progress_records.get('records', []):
+                        if record.get('resource_id') == resource.get('id') and 'score' in record:
+                            resource['scores'].append(record['score'])
+        
+        # Get date counts for chart
+        date_counts = get_date_counts(subject_name, test_id)
+        
+        # Get topic counts for chart
+        topic_counts = get_topic_counts(subject_name, test_id)
+        
+        # Render the test details template
+        return render_template('test_details.html',
+                             subject_name=subject_name,
+                             test=test,
+                             progress_records=progress_records,
+                             date_counts=date_counts,
+                             topic_counts=topic_counts)
+    
+    # If the test is not found, redirect to subject details
+    flash('Test not found!', 'error')
+    return redirect(url_for('subject_details', subject_name=subject_name))
+
 if __name__ == '__main__':
     try:
         ensure_file_structure()
