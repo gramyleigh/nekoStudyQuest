@@ -12,6 +12,13 @@ from models.resource import Resource
 from models.test import Test
 import time
 
+# Add these imports at the top of your app.py file
+from flask_apscheduler import APScheduler
+from datetime import datetime, date, timedelta
+import json
+import os
+import logging
+
 load_dotenv()
 
 # Configuration
@@ -19,9 +26,13 @@ SUBJECTS_FILE = 'subjects_data.json'
 DETAILS_DIR = 'subject_details'
 STATIC_DIR = 'static'
 PROGRESS_DIR = 'progress_records'
+REMINDERS_FILE = 'email_reminders.json'
 
 # Default subjects to use if file doesn't exist
 DEFAULT_SUBJECTS = ['Math', 'Science', 'History', 'English']
+
+# Initialize scheduler
+scheduler = APScheduler()
 
 def ensure_file_structure():
     """Ensure all required directories exist and create them if they don't"""
@@ -79,6 +90,313 @@ app.config['MAIL_MAX_EMAILS'] = 100  # Limit number of emails sent in a single c
 app.config['MAIL_SUPPRESS_SEND'] = False  # Set to True in testing environment
 app.config['MAIL_ASCII_ATTACHMENTS'] = False  # Allow UTF-8 attachments
 
+
+# STEP 1: Add these imports at the very top of your app.py file
+# -------------------------------------------------------------
+from flask_apscheduler import APScheduler
+# Make sure datetime, date, timedelta are already imported - if not, add them
+
+
+# STEP 2: Add this code near your other model definitions in app.py
+# ----------------------------------------------------------------
+# File to store scheduled emails
+REMINDERS_FILE = 'email_reminders.json'
+
+# Initialize scheduler
+scheduler = APScheduler()
+
+# Function to load reminders from file
+def load_reminders():
+    """Load email reminders from the JSON file"""
+    if os.path.exists(REMINDERS_FILE):
+        try:
+            with open(REMINDERS_FILE, 'r') as file:
+                reminders_data = json.load(file)
+                return reminders_data
+        except (json.JSONDecodeError, IOError):
+            return {"reminders": []}
+    else:
+        return {"reminders": []}
+
+# Function to save reminders to file
+def save_reminders(reminders_data):
+    """Save email reminders to the JSON file"""
+    with open(REMINDERS_FILE, 'w') as file:
+        json.dump(reminders_data, file)
+
+# Scheduler setup functions
+def init_scheduler(app):
+    """Initialize the scheduler with Flask app context"""
+    scheduler.init_app(app)
+    scheduler.start()
+    
+    # Load existing reminders and schedule them
+    with app.app_context():
+        schedule_all_reminders()
+        
+    # Add a daily job to check for test reminders based on day-before settings
+    scheduler.add_job(
+        id='check_test_reminders', 
+        func=check_test_reminders_job, 
+        trigger='cron', 
+        hour=0, 
+        minute=1,  # Run at 12:01 AM every day
+        args=[app]
+    )
+
+def schedule_all_reminders():
+    """Schedule all reminders from the file"""
+    reminders_data = load_reminders()
+    
+    for reminder_dict in reminders_data.get("reminders", []):
+        if reminder_dict.get("active", True):
+            schedule_reminder(reminder_dict)
+            
+def schedule_reminder(reminder_dict):
+    """Schedule a single reminder based on its frequency"""
+    reminder_id = reminder_dict.get("id")
+    reminder_type = reminder_dict.get("reminder_type")
+    frequency = reminder_dict.get("frequency")
+    delivery_time = reminder_dict.get("delivery_time", "08:00")
+    hour, minute = map(int, delivery_time.split(':'))
+    
+    # Clear any existing job with this ID
+    if scheduler.get_job(reminder_id):
+        scheduler.remove_job(reminder_id)
+    
+    # Schedule based on frequency
+    if frequency == "daily":
+        scheduler.add_job(
+            id=reminder_id,
+            func=send_scheduled_email,
+            trigger='cron',
+            hour=hour,
+            minute=minute,
+            args=[reminder_dict]
+        )
+    elif frequency == "weekly":
+        # Schedule for the same day of week each week
+        scheduler.add_job(
+            id=reminder_id,
+            func=send_scheduled_email,
+            trigger='cron',
+            day_of_week=datetime.now().weekday(),
+            hour=hour,
+            minute=minute,
+            args=[reminder_dict]
+        )
+    elif frequency == "once":
+        # Schedule just once for tomorrow
+        tomorrow = datetime.now() + timedelta(days=1)
+        run_time = datetime(
+            tomorrow.year, tomorrow.month, tomorrow.day,
+            hour, minute
+        )
+        scheduler.add_job(
+            id=reminder_id,
+            func=send_scheduled_email,
+            trigger='date',
+            run_date=run_time,
+            args=[reminder_dict]
+        )
+
+def check_test_reminders_job(app):
+    """Job to check for tests that need reminders based on days_before settings"""
+    with app.app_context():
+        reminders_data = load_reminders()
+        
+        for reminder_dict in reminders_data.get("reminders", []):
+            if (reminder_dict.get("active", True) and 
+                reminder_dict.get("frequency") == "days_before" and
+                reminder_dict.get("days_before")):
+                
+                subject_name = reminder_dict.get("subject_name")
+                test_id = reminder_dict.get("test_id")
+                
+                # Load subject and test data
+                subject_data = load_subject_details(subject_name)
+                test = next((t for t in subject_data.get('tests', []) 
+                           if isinstance(t, dict) and t.get('id') == test_id), None)
+                
+                if test and "date" in test:
+                    # Calculate days until test
+                    test_date = datetime.strptime(test['date'], '%Y-%m-%d').date()
+                    today = date.today()
+                    days_until_test = (test_date - today).days
+                    
+                    # Check if today is a reminder day
+                    days_before_list = reminder_dict.get("days_before", [])
+                    if str(days_until_test) in days_before_list:
+                        # Send the reminder today
+                        send_scheduled_email(reminder_dict)
+
+def send_scheduled_email(reminder_dict):
+    """Send an email based on the reminder type and settings"""
+    subject_name = reminder_dict.get("subject_name")
+    test_id = reminder_dict.get("test_id")
+    reminder_type = reminder_dict.get("reminder_type")
+    custom_message = reminder_dict.get("custom_message")
+    
+    # Load subject and test data
+    subject_data = load_subject_details(subject_name)
+    test = next((t for t in subject_data.get('tests', []) 
+               if isinstance(t, dict) and t.get('id') == test_id), None)
+    
+    if not test:
+        print(f"Test not found for reminder: {reminder_dict}")
+        return
+    
+    # Calculate progress
+    progress = calculate_progress(test, subject_name)
+    
+    # Send appropriate email based on type
+    if reminder_type == "test_reminder":
+        send_test_reminder_email(subject_name, test['name'], test['date'], progress)
+    elif reminder_type == "progress_report":
+        # Get today's completed resources
+        todays_resources = get_todays_resources(subject_name, test_id)
+        if todays_resources:
+            send_daily_progress_email(subject_name, test['name'], todays_resources)
+    elif reminder_type == "completion_alert":
+        # Only send if progress is 100%
+        if progress == 100:
+            # Count total resources
+            total_resources = 0
+            completed_resources = 0
+            for topic in test.get('topics', []):
+                for resource in topic.get('resources', []):
+                    total_resources += resource.get('count', 1)
+                    completed_resources += resource.get('completed', 0)
+            
+            send_test_complete_email(subject_name, test['name'], progress,
+                                    completed_resources, total_resources)
+    elif reminder_type == "custom" and custom_message:
+        send_custom_reminder_email(subject_name, test['name'], custom_message)
+
+
+# STEP 3: Add these new routes at the end of your routes section
+# -------------------------------------------------------------
+@app.route('/add-email-reminder/<subject_name>/<test_id>', methods=['POST'])
+def add_email_reminder(subject_name, test_id):
+    """Add a new email reminder"""
+    reminder_type = request.form.get('reminderType', 'test_reminder')
+    frequency = request.form.get('reminderFrequency', 'once')
+    reminder_time = request.form.get('reminderTime', '08:00')
+    custom_message = request.form.get('customMessage', '')
+    
+    # Get days before list if that frequency is selected
+    days_before = None
+    if frequency == 'days_before':
+        days_before = request.form.getlist('days_before[]')
+    
+    # Generate unique ID for the reminder
+    reminder_id = str(uuid.uuid4())
+    
+    # Create reminder object
+    reminder = {
+        "id": reminder_id,
+        "subject_name": subject_name,
+        "test_id": test_id,
+        "reminder_type": reminder_type,
+        "frequency": frequency,
+        "delivery_time": reminder_time,
+        "days_before": days_before,
+        "custom_message": custom_message,
+        "created_at": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        "active": True
+    }
+    
+    # Save to JSON file
+    reminders_data = load_reminders()
+    reminders_data["reminders"].append(reminder)
+    save_reminders(reminders_data)
+    
+    # Schedule the reminder
+    schedule_reminder(reminder)
+    
+    flash(f'Email reminder scheduled successfully!', 'success')
+    return redirect(url_for('test_statistics', subject_name=subject_name, test_id=test_id))
+
+@app.route('/get-email-reminders/<subject_name>/<test_id>')
+def get_email_reminders(subject_name, test_id):
+    """Get all email reminders for a test"""
+    reminders_data = load_reminders()
+    
+    # Filter reminders for this test
+    test_reminders = [r for r in reminders_data.get("reminders", []) 
+                      if r.get("subject_name") == subject_name and r.get("test_id") == test_id]
+    
+    return jsonify(test_reminders)
+
+@app.route('/delete-email-reminder/<reminder_id>', methods=['POST'])
+def delete_email_reminder(reminder_id):
+    """Delete an email reminder"""
+    reminders_data = load_reminders()
+    
+    # Find the reminder to get subject and test info for redirect
+    reminder = next((r for r in reminders_data.get("reminders", []) if r.get("id") == reminder_id), None)
+    
+    if not reminder:
+        flash('Reminder not found!', 'error')
+        return redirect(url_for('index'))
+    
+    subject_name = reminder.get("subject_name")
+    test_id = reminder.get("test_id")
+    
+    # Remove reminder from list
+    reminders_data["reminders"] = [r for r in reminders_data.get("reminders", []) if r.get("id") != reminder_id]
+    save_reminders(reminders_data)
+    
+    # Remove scheduled job
+    if scheduler.get_job(reminder_id):
+        scheduler.remove_job(reminder_id)
+    
+    flash('Email reminder deleted successfully!', 'success')
+    return redirect(url_for('test_statistics', subject_name=subject_name, test_id=test_id))
+
+
+# STEP 4: Update your email functions to add these new types
+# ---------------------------------------------------------
+def send_custom_reminder_email(subject_name, test_name, custom_message):
+    """Send a custom reminder email"""
+    recipient = app.config['MAIL_USERNAME']  # Send to yourself
+
+    subject = f"📚 Custom Reminder: {test_name} - {subject_name}"
+
+    body = f"""
+    <html>
+    <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #f9f9f9;">
+        <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 20px; border-radius: 10px; border-top: 5px solid #92c1ff; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);">
+            <h1 style="color: #92c1ff;">Custom Study Reminder</h1>
+            <p>Here's your custom reminder for:</p>
+            <div style="background-color: #f0f0f0; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                <h2 style="margin-top: 0; color: #6a9ee8;">{test_name}</h2>
+                <p><strong>Subject:</strong> {subject_name}</p>
+            </div>
+            <div style="background-color: #e0d8ff; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                <p>{custom_message}</p>
+            </div>
+            <p>Meow~ 🐱</p>
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #999;">
+                <p>This is an automated message from your Neko Study Quest app.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+
+    msg = Message(subject=subject, recipients=[recipient], html=body)
+    mail.send(msg)
+
+
+# STEP 5: Add this at the very end of your app.py, just before app.run()
+# ---------------------------------------------------------------------
+# At the bottom of the file, add this before app.run():
+if __name__ == '__main__':
+    init_scheduler(app)
+    app.run(debug=True)
+
+    
 # Initialize Mail with error handling
 try:
     mail = Mail(app)
@@ -1482,15 +1800,6 @@ def delete_subject_topic_resource(subject_name, topic_id, resource_id):
 
 
 
-
-
-
-
-
-
-
-
-
 @app.route('/edit-subject-name', methods=['POST'])
 def edit_subject_name():
     """
@@ -2302,6 +2611,7 @@ def test_details(subject_name, test_id):
     return redirect(url_for('subject_details', subject_name=subject_name))
 
 if __name__ == '__main__':
+    init_scheduler(app)
     try:
         ensure_file_structure()
         print("Starting Neko Study Quest...")
@@ -2315,4 +2625,376 @@ if __name__ == '__main__':
         app.run(debug=True)
     except Exception as e:
         print(f"Error starting application: {str(e)}")
+
+
+
+
+
+
+# Create a new model for scheduled emails (add this to your app.py)
+class EmailReminder:
+    """Class to store email reminders"""
+    def __init__(self, id, subject_name, test_id, reminder_type, frequency, 
+                 delivery_time, days_before=None, custom_message=None):
+        self.id = id
+        self.subject_name = subject_name
+        self.test_id = test_id
+        self.reminder_type = reminder_type
+        self.frequency = frequency
+        self.delivery_time = delivery_time
+        self.days_before = days_before
+        self.custom_message = custom_message
+        self.created_at = datetime.now()
+        self.active = True
+
+# File to store scheduled emails
+REMINDERS_FILE = 'email_reminders.json'
+
+# Initialize scheduler
+scheduler = APScheduler()
+
+# Function to load reminders from file
+def load_reminders():
+    """Load email reminders from the JSON file"""
+    if os.path.exists(REMINDERS_FILE):
+        try:
+            with open(REMINDERS_FILE, 'r') as file:
+                reminders_data = json.load(file)
+                return reminders_data
+        except (json.JSONDecodeError, IOError):
+            return {"reminders": []}
+    else:
+        return {"reminders": []}
+
+# Function to save reminders to file
+def save_reminders(reminders_data):
+    """Save email reminders to the JSON file"""
+    with open(REMINDERS_FILE, 'w') as file:
+        json.dump(reminders_data, file)
+
+# Add these scheduler setup functions after initializing your Flask app
+def init_scheduler(app):
+    """Initialize the scheduler with Flask app context"""
+    scheduler.init_app(app)
+    scheduler.start()
+    
+    # Load existing reminders and schedule them
+    with app.app_context():
+        schedule_all_reminders()
+        
+    # Add a daily job to check for test reminders based on day-before settings
+    scheduler.add_job(
+        id='check_test_reminders', 
+        func=check_test_reminders_job, 
+        trigger='cron', 
+        hour=0, 
+        minute=1,  # Run at 12:01 AM every day
+        args=[app]
+    )
+
+def schedule_all_reminders():
+    """Schedule all reminders from the file"""
+    reminders_data = load_reminders()
+    
+    for reminder_dict in reminders_data.get("reminders", []):
+        if reminder_dict.get("active", True):
+            schedule_reminder(reminder_dict)
+            
+def schedule_reminder(reminder_dict):
+    """Schedule a single reminder based on its frequency"""
+    reminder_id = reminder_dict.get("id")
+    reminder_type = reminder_dict.get("reminder_type")
+    frequency = reminder_dict.get("frequency")
+    delivery_time = reminder_dict.get("delivery_time", "08:00")
+    hour, minute = map(int, delivery_time.split(':'))
+    
+    # Clear any existing job with this ID
+    if scheduler.get_job(reminder_id):
+        scheduler.remove_job(reminder_id)
+    
+    # Schedule based on frequency
+    if frequency == "daily":
+        scheduler.add_job(
+            id=reminder_id,
+            func=send_scheduled_email,
+            trigger='cron',
+            hour=hour,
+            minute=minute,
+            args=[reminder_dict]
+        )
+    elif frequency == "weekly":
+        # Schedule for the same day of week each week
+        scheduler.add_job(
+            id=reminder_id,
+            func=send_scheduled_email,
+            trigger='cron',
+            day_of_week=datetime.now().weekday(),
+            hour=hour,
+            minute=minute,
+            args=[reminder_dict]
+        )
+    elif frequency == "once":
+        # Schedule just once for tomorrow
+        tomorrow = datetime.now() + timedelta(days=1)
+        run_time = datetime(
+            tomorrow.year, tomorrow.month, tomorrow.day,
+            hour, minute
+        )
+        scheduler.add_job(
+            id=reminder_id,
+            func=send_scheduled_email,
+            trigger='date',
+            run_date=run_time,
+            args=[reminder_dict]
+        )
+
+def check_test_reminders_job(app):
+    """Job to check for tests that need reminders based on days_before settings"""
+    with app.app_context():
+        reminders_data = load_reminders()
+        
+        for reminder_dict in reminders_data.get("reminders", []):
+            if (reminder_dict.get("active", True) and 
+                reminder_dict.get("frequency") == "days_before" and
+                reminder_dict.get("days_before")):
+                
+                subject_name = reminder_dict.get("subject_name")
+                test_id = reminder_dict.get("test_id")
+                
+                # Load subject and test data
+                subject_data = load_subject_details(subject_name)
+                test = next((t for t in subject_data.get('tests', []) 
+                           if isinstance(t, dict) and t.get('id') == test_id), None)
+                
+                if test and "date" in test:
+                    # Calculate days until test
+                    test_date = datetime.strptime(test['date'], '%Y-%m-%d').date()
+                    today = date.today()
+                    days_until_test = (test_date - today).days
+                    
+                    # Check if today is a reminder day
+                    days_before_list = reminder_dict.get("days_before", [])
+                    if str(days_until_test) in days_before_list:
+                        # Send the reminder today
+                        send_scheduled_email(reminder_dict)
+
+def send_scheduled_email(reminder_dict):
+    """Send an email based on the reminder type and settings"""
+    subject_name = reminder_dict.get("subject_name")
+    test_id = reminder_dict.get("test_id")
+    reminder_type = reminder_dict.get("reminder_type")
+    custom_message = reminder_dict.get("custom_message")
+    
+    # Load subject and test data
+    subject_data = load_subject_details(subject_name)
+    test = next((t for t in subject_data.get('tests', []) 
+               if isinstance(t, dict) and t.get('id') == test_id), None)
+    
+    if not test:
+        logging.warning(f"Test not found for reminder: {reminder_dict}")
+        return
+    
+    # Calculate progress
+    progress = calculate_progress(test, subject_name)
+    
+    # Send appropriate email based on type
+    if reminder_type == "test_reminder":
+        send_test_reminder_email(subject_name, test['name'], test['date'], progress)
+    elif reminder_type == "progress_report":
+        # Get today's completed resources
+        todays_resources = get_todays_resources(subject_name, test_id)
+        if todays_resources:
+            send_daily_progress_email(subject_name, test['name'], todays_resources)
+    elif reminder_type == "completion_alert":
+        # Only send if progress is 100%
+        if progress == 100:
+            # Count total resources
+            total_resources = 0
+            completed_resources = 0
+            for topic in test.get('topics', []):
+                for resource in topic.get('resources', []):
+                    total_resources += resource.get('count', 1)
+                    completed_resources += resource.get('completed', 0)
+            
+            send_test_complete_email(subject_name, test['name'], progress,
+                                    completed_resources, total_resources)
+    elif reminder_type == "study_streak":
+        # Calculate current streak
+        streak = calculate_streak_for_test(subject_name, test_id)
+        if streak > 0:
+            send_streak_notification_email(subject_name, test['name'], streak)
+    elif reminder_type == "custom" and custom_message:
+        send_custom_reminder_email(subject_name, test['name'], custom_message)
+
+# Function to calculate streak for a specific test
+def calculate_streak_for_test(subject_name, test_id):
+    """Calculate the current streak for a specific test"""
+    # Get date counts
+    date_counts = get_date_counts(subject_name, test_id)
+    
+    if not date_counts:
+        return 0
+    
+    # Sort dates in ascending order
+    sorted_dates = sorted(date_counts, key=lambda x: datetime.strptime(x[0], '%Y-%m-%d'))
+    
+    # Check if latest activity was today or yesterday
+    latest_date = datetime.strptime(sorted_dates[-1][0], '%Y-%m-%d').date()
+    today = date.today()
+    
+    if latest_date != today and latest_date != today - timedelta(days=1):
+        return 0  # Streak broken if last activity not today or yesterday
+    
+    # Count streak
+    streak = 1
+    for i in range(len(sorted_dates) - 2, -1, -1):
+        current_date = datetime.strptime(sorted_dates[i][0], '%Y-%m-%d').date()
+        next_date = datetime.strptime(sorted_dates[i+1][0], '%Y-%m-%d').date()
+        
+        if (next_date - current_date).days == 1:
+            streak += 1
+        else:
+            break
+    
+    return streak
+
+# Email sending functions (extend existing ones)
+def send_streak_notification_email(subject_name, test_name, streak):
+    """Send an email notification about the current study streak"""
+    recipient = app.config['MAIL_USERNAME']  # Send to yourself
+
+    subject = f"🔥 Study Streak: {streak} Days - {test_name}"
+
+    body = f"""
+    <html>
+    <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #f9f9f9;">
+        <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 20px; border-radius: 10px; border-top: 5px solid #9687db; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);">
+            <h1 style="color: #9687db;">Study Streak: {streak} Days! 🔥</h1>
+            <p>Amazing work! You've been studying for <strong>{streak} consecutive days</strong> for your test:</p>
+            <div style="background-color: #f0f0f0; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                <h2 style="margin-top: 0; color: #6b58cd;">{test_name}</h2>
+                <p><strong>Subject:</strong> {subject_name}</p>
+            </div>
+            <p>Keep up the momentum! Consistent study habits lead to better learning outcomes.</p>
+            <p>Purrfect work! 😺</p>
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #999;">
+                <p>This is an automated message from your Neko Study Quest app.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+
+    msg = Message(subject=subject, recipients=[recipient], html=body)
+    mail.send(msg)
+
+def send_custom_reminder_email(subject_name, test_name, custom_message):
+    """Send a custom reminder email"""
+    recipient = app.config['MAIL_USERNAME']  # Send to yourself
+
+    subject = f"📚 Custom Reminder: {test_name} - {subject_name}"
+
+    body = f"""
+    <html>
+    <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #f9f9f9;">
+        <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 20px; border-radius: 10px; border-top: 5px solid #92c1ff; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);">
+            <h1 style="color: #92c1ff;">Custom Study Reminder</h1>
+            <p>Here's your custom reminder for:</p>
+            <div style="background-color: #f0f0f0; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                <h2 style="margin-top: 0; color: #6a9ee8;">{test_name}</h2>
+                <p><strong>Subject:</strong> {subject_name}</p>
+            </div>
+            <div style="background-color: #e0d8ff; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                <p>{custom_message}</p>
+            </div>
+            <p>Meow~ 🐱</p>
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #999;">
+                <p>This is an automated message from your Neko Study Quest app.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+
+    msg = Message(subject=subject, recipients=[recipient], html=body)
+    mail.send(msg)
+
+# Add these new routes to your Flask app 
+@app.route('/add-email-reminder/<subject_name>/<test_id>', methods=['POST'])
+def add_email_reminder(subject_name, test_id):
+    """Add a new email reminder"""
+    reminder_type = request.form.get('reminderType', 'test_reminder')
+    frequency = request.form.get('reminderFrequency', 'once')
+    reminder_time = request.form.get('reminderTime', '08:00')
+    custom_message = request.form.get('customMessage', '')
+    
+    # Get days before list if that frequency is selected
+    days_before = None
+    if frequency == 'days_before':
+        days_before = request.form.getlist('days_before[]')
+    
+    # Generate unique ID for the reminder
+    reminder_id = str(uuid.uuid4())
+    
+    # Create reminder object
+    reminder = {
+        "id": reminder_id,
+        "subject_name": subject_name,
+        "test_id": test_id,
+        "reminder_type": reminder_type,
+        "frequency": frequency,
+        "delivery_time": reminder_time,
+        "days_before": days_before,
+        "custom_message": custom_message,
+        "created_at": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        "active": True
+    }
+    
+    # Save to JSON file
+    reminders_data = load_reminders()
+    reminders_data["reminders"].append(reminder)
+    save_reminders(reminders_data)
+    
+    # Schedule the reminder
+    schedule_reminder(reminder)
+    
+    flash(f'Email reminder scheduled successfully!', 'success')
+    return redirect(url_for('test_statistics', subject_name=subject_name, test_id=test_id))
+
+@app.route('/get-email-reminders/<subject_name>/<test_id>')
+def get_email_reminders(subject_name, test_id):
+    """Get all email reminders for a test"""
+    reminders_data = load_reminders()
+    
+    # Filter reminders for this test
+    test_reminders = [r for r in reminders_data.get("reminders", []) 
+                      if r.get("subject_name") == subject_name and r.get("test_id") == test_id]
+    
+    return jsonify(test_reminders)
+
+@app.route('/delete-email-reminder/<reminder_id>', methods=['POST'])
+def delete_email_reminder(reminder_id):
+    """Delete an email reminder"""
+    reminders_data = load_reminders()
+    
+    # Find the reminder to get subject and test info for redirect
+    reminder = next((r for r in reminders_data.get("reminders", []) if r.get("id") == reminder_id), None)
+    
+    if not reminder:
+        flash('Reminder not found!', 'error')
+        return redirect(url_for('index'))
+    
+    subject_name = reminder.get("subject_name")
+    test_id = reminder.get("test_id")
+    
+    # Remove reminder from list
+    reminders_data["reminders"] = [r for r in reminders_data.get("reminders", []) if r.get("id") != reminder_id]
+    save_reminders(reminders_data)
+    
+    # Remove scheduled job
+    if scheduler.get_job(reminder_id):
+        scheduler.remove_job(reminder_id)
+    
+    flash('Email reminder deleted successfully!', 'success')
+    return redirect(url_for('test_statistics', subject_name=subject_name, test_id=test_id))
 

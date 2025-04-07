@@ -336,14 +336,113 @@
         Back to Subject
     </a>
     
-    <form action="{{ url_for('send_test_reminder', subject_name=subject_name, test_id=test.id) }}" method="post" style="display: inline;">
-        <button type="submit" class="btn btn-secondary">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-icon">
-                <path d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3zm-8.27 4a2 2 0 0 1-3.46 0"></path>
+    <!-- Reminder Widget Toggle Button -->
+    <button type="button" class="btn btn-secondary" id="reminderToggleBtn">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-icon">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+        </svg>
+        Email Reminders
+    </button>
+</div>
+
+<!-- Foldable Email Reminder Widget -->
+<div class="reminder-widget" id="reminderWidget">
+    <div class="reminder-header">
+        <h3 class="reminder-title">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="reminder-icon">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                <polyline points="22,6 12,13 2,6"></polyline>
             </svg>
-            Send Reminder
+            Email Reminders
+        </h3>
+        <button type="button" class="reminder-close" id="reminderCloseBtn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
         </button>
-    </form>
+    </div>
+    
+    <div class="reminder-content">
+        <form id="reminderForm" action="{{ url_for('add_email_reminder', subject_name=subject_name, test_id=test.id) }}" method="post">
+            <!-- Reminder Type Selection -->
+            <div class="reminder-section">
+                <label for="reminderType" class="reminder-label">Reminder Type</label>
+                <select id="reminderType" name="reminderType" class="reminder-select">
+                    <option value="test_reminder">Test Reminders</option>
+                    <option value="progress_report">Progress Reports</option>
+                    <option value="completion_alert">Completion Alerts</option>
+                    <option value="study_streak">Streak Notifications</option>
+                    <option value="custom">Custom Message</option>
+                </select>
+            </div>
+            
+            <!-- Frequency Selection -->
+            <div class="reminder-section">
+                <label for="reminderFrequency" class="reminder-label">Frequency</label>
+                <select id="reminderFrequency" name="reminderFrequency" class="reminder-select">
+                    <option value="once">One-time</option>
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="milestone">At Milestones (25%, 50%, 75%)</option>
+                    <option value="days_before">Days Before Test</option>
+                </select>
+            </div>
+            
+            <!-- Days Before Test (conditionally shown) -->
+            <div class="reminder-section days-before-options">
+                <label class="reminder-label">Days Before Test</label>
+                <div class="days-before-checkboxes">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="days_before[]" value="7" checked> 7 days
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="days_before[]" value="3" checked> 3 days
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="days_before[]" value="1" checked> 1 day
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="days_before[]" value="0"> Day of test
+                    </label>
+                </div>
+            </div>
+            
+            <!-- Delivery Time -->
+            <div class="reminder-section">
+                <label for="reminderTime" class="reminder-label">Delivery Time</label>
+                <input type="time" id="reminderTime" name="reminderTime" value="08:00" class="reminder-time">
+            </div>
+            
+            <!-- Custom Message (conditionally shown) -->
+            <div class="reminder-section custom-message-section">
+                <label for="customMessage" class="reminder-label">Custom Message</label>
+                <textarea id="customMessage" name="customMessage" class="reminder-textarea" placeholder="Enter your custom reminder message here..."></textarea>
+            </div>
+            
+            <!-- Submit Button -->
+            <button type="submit" class="reminder-submit-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="reminder-btn-icon">
+                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+                Schedule Reminders
+            </button>
+        </form>
+        
+        <!-- Active Reminders Section -->
+        <div class="active-reminders">
+            <h4 class="active-reminders-title">Active Reminders</h4>
+            
+            <div id="active-reminders-list">
+                <!-- Reminders will be loaded dynamically via JavaScript -->
+                <div class="loading-reminders">
+                    Loading reminders...
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
 
@@ -499,23 +598,43 @@
 
     .widget-title::before {
         margin-right: 10px;
-        font-size: 1.4rem;
+        width: 24px;
+        height: 24px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
     }
 
     .widget-title.daily-chart::before {
-        content: "📅";
+        content: "";
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23546079' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='2' ry='2'%3E%3C/rect%3E%3Cline x1='16' y1='2' x2='16' y2='6'%3E%3C/line%3E%3Cline x1='8' y1='2' x2='8' y2='6'%3E%3C/line%3E%3Cline x1='3' y1='10' x2='21' y2='10'%3E%3C/line%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: contain;
     }
 
     .widget-title.topic-chart::before {
-        content: "📊";
+        content: "";
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23546079' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 3v18h18'%3E%3C/path%3E%3Cpath d='M18.4 8l-5.3 5.3-2.7-2.7-3 3'%3E%3C/path%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: contain;
     }
 
     .widget-title.topic-details::before {
-        content: "📝";
+        content: "";
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23546079' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'%3E%3C/path%3E%3Cpolyline points='14 2 14 8 20 8'%3E%3C/polyline%3E%3Cline x1='16' y1='13' x2='8' y2='13'%3E%3C/line%3E%3Cline x1='16' y1='17' x2='8' y2='17'%3E%3C/line%3E%3Cpolyline points='10 9 9 9 8 9'%3E%3C/polyline%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: contain;
     }
 
     .widget-title.study-time::before {
-        content: "⏱️";
+        content: "";
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23546079' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'%3E%3C/circle%3E%3Cpolyline points='12 6 12 12 16 14'%3E%3C/polyline%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: contain;
     }
 
     .widget-content {
@@ -849,23 +968,234 @@
         transform: rotate(15deg);
     }
 
-    /* Responsive Design */
-    @media (max-width: 992px) {
-        .dashboard-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .stats-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .button-group {
-            flex-direction: column;
-        }
-
-        .widget-content {
-            height: 250px;
-        }
+    /* Reminder Widget Styles */
+    .reminder-widget {
+        background-color: rgba(255, 255, 255, 0.9);
+        border-radius: 15px;
+        border: 3px solid var(--primary);
+        box-shadow: 5px 5px 0 var(--primary-light);
+        margin: 25px auto;
+        max-width: 600px;
+        overflow: hidden;
+        display: none;
+        transition: all 0.3s ease-in-out;
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    
+    .reminder-widget.active {
+        display: block;
+        opacity: 1;
+        transform: translateY(0);
+    }
+    
+    .reminder-header {
+        background-color: var(--primary-light);
+        padding: 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px dashed var(--primary);
+    }
+    
+    .reminder-title {
+        margin: 0;
+        font-size: 1.3rem;
+        color: var(--primary-dark);
+        display: flex;
+        align-items: center;
+    }
+    
+    .reminder-icon {
+        margin-right: 10px;
+        color: var(--primary-dark);
+    }
+    
+    .reminder-close {
+        background: none;
+        border: none;
+        color: var(--dark);
+        cursor: pointer;
+        padding: 5px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: all 0.2s ease;
+    }
+    
+    .reminder-close:hover {
+        background-color: rgba(255, 255, 255, 0.6);
+        transform: scale(1.1);
+    }
+    
+    .reminder-content {
+        padding: 20px;
+    }
+    
+    .reminder-section {
+        margin-bottom: 15px;
+    }
+    
+    .reminder-label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: bold;
+        color: var(--dark);
+    }
+    
+    .reminder-select,
+    .reminder-time,
+    .reminder-textarea {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid rgba(169, 149, 239, 0.3);
+        border-radius: 8px;
+        font-family: 'Comic Neue', cursive;
+        background-color: white;
+    }
+    
+    .reminder-textarea {
+        height: 100px;
+        resize: vertical;
+    }
+    
+    .checkbox-label {
+        display: inline-flex;
+        align-items: center;
+        margin-right: 15px;
+        margin-bottom: 8px;
+        cursor: pointer;
+    }
+    
+    .checkbox-label input {
+        margin-right: 5px;
+    }
+    
+    .days-before-options,
+    .custom-message-section {
+        display: none;
+    }
+    
+    .days-before-options.active,
+    .custom-message-section.active {
+        display: block;
+        animation: fadeIn 0.3s ease-in-out;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .days-before-checkboxes {
+        display: flex;
+        flex-wrap: wrap;
+    }
+    
+    .reminder-submit-btn {
+        background-color: var(--secondary);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 12px 18px;
+        font-family: 'Comic Neue', cursive;
+        font-weight: bold;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        margin-top: 15px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    
+    .reminder-submit-btn:hover {
+        background-color: var(--secondary-dark);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+    
+    .reminder-btn-icon {
+        margin-right: 8px;
+    }
+    
+    /* Active Reminders Section */
+    .active-reminders {
+        margin-top: 25px;
+        border-top: 1px dashed var(--primary-light);
+        padding-top: 15px;
+    }
+    
+    .active-reminders-title {
+        font-size: 1.1rem;
+        color: var(--secondary-dark);
+        margin-bottom: 15px;
+        padding-bottom: 5px;
+        border-bottom: 1px solid rgba(146, 193, 255, 0.3);
+    }
+    
+    .active-reminder-item {
+        background-color: rgba(255, 255, 255, 0.8);
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        border-left: 3px solid var(--secondary-light);
+        transition: all 0.2s ease;
+    }
+    
+    .active-reminder-item:hover {
+        background-color: rgba(255, 255, 255, 0.95);
+        transform: translateX(3px);
+        box-shadow: 0 3px 7px rgba(0, 0, 0, 0.08);
+    }
+    
+    .active-reminder-type {
+        font-weight: bold;
+        color: var(--secondary-dark);
+        margin-bottom: 3px;
+    }
+    
+    .active-reminder-schedule {
+        font-size: 0.9rem;
+        color: var(--dark);
+    }
+    
+    .active-reminder-delete {
+        background: none;
+        border: none;
+        color: var(--danger);
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+    }
+    
+    /* Loading indicator */
+    .loading-reminders {
+        text-align: center;
+        padding: 15px;
+        font-style: italic;
+        color: var(--dark);
+    }
+    
+    .no-reminders {
+        text-align: center;
+        padding: 15px;
+        font-style: italic;
+        color: var(--dark);
+        background-color: rgba(255, 255, 255, 0.5);
+        border-radius: 8px;
+        border: 1px dashed var(--primary-light);
     }
 </style>
 {% endblock %}
@@ -1054,6 +1384,166 @@
                 });
             }
         {% endif %}
+        
+        // Email Reminder Widget Controls
+        const reminderToggleBtn = document.getElementById('reminderToggleBtn');
+        const reminderCloseBtn = document.getElementById('reminderCloseBtn');
+        const reminderWidget = document.getElementById('reminderWidget');
+        const reminderTypeSelect = document.getElementById('reminderType');
+        const reminderFrequencySelect = document.getElementById('reminderFrequency');
+        const daysBeforeOptions = document.querySelector('.days-before-options');
+        const customMessageSection = document.querySelector('.custom-message-section');
+        const activeRemindersListElement = document.getElementById('active-reminders-list');
+        
+        // Toggle reminder widget visibility
+        if (reminderToggleBtn && reminderWidget) {
+            reminderToggleBtn.addEventListener('click', function() {
+                reminderWidget.classList.toggle('active');
+                
+                // Scroll to widget if it's now active
+                if (reminderWidget.classList.contains('active')) {
+                    setTimeout(() => {
+                        reminderWidget.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }, 100);
+                    
+                    // Load active reminders
+                    loadActiveReminders();
+                }
+            });
+        }
+        
+        // Load active reminders via fetch API
+        function loadActiveReminders() {
+            if (activeRemindersListElement) {
+                activeRemindersListElement.innerHTML = '<div class="loading-reminders">Loading reminders...</div>';
+                
+                fetch(`/get-email-reminders/{{ subject_name }}/${encodeURIComponent('{{ test.id }}')}`)
+                    .then(response => response.json())
+                    .then(reminders => {
+                        if (reminders && reminders.length > 0) {
+                            displayReminders(reminders);
+                        } else {
+                            activeRemindersListElement.innerHTML = '<div class="no-reminders">No active reminders. Add one above!</div>';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error loading reminders:', error);
+                        activeRemindersListElement.innerHTML = '<div class="no-reminders">Error loading reminders. Please try again.</div>';
+                    });
+            }
+        }
+        
+        // Display reminders in the list
+        function displayReminders(reminders) {
+            let html = '';
+            
+            reminders.forEach(reminder => {
+                let scheduleText = '';
+                
+                // Format schedule text based on frequency
+                if (reminder.frequency === 'daily') {
+                    scheduleText = `Daily at ${formatTime(reminder.delivery_time)}`;
+                } else if (reminder.frequency === 'weekly') {
+                    scheduleText = `Weekly at ${formatTime(reminder.delivery_time)}`;
+                } else if (reminder.frequency === 'once') {
+                    scheduleText = `Once at ${formatTime(reminder.delivery_time)}`;
+                } else if (reminder.frequency === 'days_before' && reminder.days_before) {
+                    const daysText = reminder.days_before.map(day => {
+                        if (day === '0') return 'day of test';
+                        return `${day} days before`;
+                    }).join(', ');
+                    scheduleText = `${daysText} at ${formatTime(reminder.delivery_time)}`;
+                } else if (reminder.frequency === 'milestone') {
+                    scheduleText = `At progress milestones (25%, 50%, 75%)`;
+                }
+                
+                // Format reminder type
+                let typeText = '';
+                if (reminder.reminder_type === 'test_reminder') {
+                    typeText = 'Test Reminder';
+                } else if (reminder.reminder_type === 'progress_report') {
+                    typeText = 'Progress Report';
+                } else if (reminder.reminder_type === 'completion_alert') {
+                    typeText = 'Completion Alert';
+                } else if (reminder.reminder_type === 'study_streak') {
+                    typeText = 'Streak Notification';
+                } else if (reminder.reminder_type === 'custom') {
+                    typeText = 'Custom Message';
+                }
+                
+                html += `
+                    <div class="active-reminder-item">
+                        <div class="active-reminder-info">
+                            <div class="active-reminder-type">${typeText}</div>
+                            <div class="active-reminder-schedule">${scheduleText}</div>
+                        </div>
+                        <form action="/delete-email-reminder/${reminder.id}" method="post" style="display: inline;">
+                            <button type="submit" class="active-reminder-delete" onclick="return confirm('Are you sure you want to delete this reminder?');">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                </svg>
+                            </button>
+                        </form>
+                    </div>
+                `;
+            });
+            
+            activeRemindersListElement.innerHTML = html;
+        }
+        
+        // Format time from 24-hour to 12-hour format
+        function formatTime(time24) {
+            if (!time24) return '8:00 AM';
+            
+            const [hourStr, minuteStr] = time24.split(':');
+            let hour = parseInt(hourStr, 10);
+            const minute = minuteStr || '00';
+            const period = hour >= 12 ? 'PM' : 'AM';
+            
+            // Convert to 12-hour format
+            hour = hour % 12;
+            hour = hour ? hour : 12; // Convert 0 to 12
+            
+            return `${hour}:${minute} ${period}`;
+        }
+        
+        // Close reminder widget
+        if (reminderCloseBtn && reminderWidget) {
+            reminderCloseBtn.addEventListener('click', function() {
+                reminderWidget.classList.remove('active');
+            });
+        }
+        
+        // Show/hide fields based on selections
+        if (reminderTypeSelect) {
+            reminderTypeSelect.addEventListener('change', function() {
+                if (this.value === 'custom') {
+                    customMessageSection.classList.add('active');
+                } else {
+                    customMessageSection.classList.remove('active');
+                }
+            });
+        }
+        
+        if (reminderFrequencySelect) {
+            reminderFrequencySelect.addEventListener('change', function() {
+                if (this.value === 'days_before') {
+                    daysBeforeOptions.classList.add('active');
+                } else {
+                    daysBeforeOptions.classList.remove('active');
+                }
+            });
+        }
+        
+        // Initialize conditional fields
+        if (reminderTypeSelect && reminderTypeSelect.value === 'custom') {
+            customMessageSection.classList.add('active');
+        }
+        
+        if (reminderFrequencySelect && reminderFrequencySelect.value === 'days_before') {
+            daysBeforeOptions.classList.add('active');
+        }
     });
 </script>
 {% endblock %}
