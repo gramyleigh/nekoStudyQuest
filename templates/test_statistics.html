@@ -92,16 +92,19 @@
             {% set dates = dates|sort %}
             {% set last_date = dates[-1] %}
             
-            <!-- Calculate current streak -->
+            <!-- Calculate current streak - using a flag instead of break -->
             {% set streak.current = 1 %}
+            {% set streak.continue_counting = namespace(value=true) %}
             {% for i in range(dates|length - 2, -1, -1) %}
-                {% set prev_date = dates[i] %}
-                {% set days_diff = 1 %} <!-- Placeholder - ideally calculate actual difference -->
-                
-                {% if days_diff == 1 %}
-                    {% set streak.current = streak.current + 1 %}
-                {% else %}
-                    {% break %}
+                {% if streak.continue_counting.value %}
+                    {% set prev_date = dates[i] %}
+                    {% set days_diff = 1 %} <!-- Placeholder - ideally calculate actual difference -->
+                    
+                    {% if days_diff == 1 %}
+                        {% set streak.current = streak.current + 1 %}
+                    {% else %}
+                        {% set streak.continue_counting.value = false %}
+                    {% endif %}
                 {% endif %}
             {% endfor %}
             
