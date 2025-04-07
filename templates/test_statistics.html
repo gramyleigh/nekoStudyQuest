@@ -92,21 +92,22 @@
             {% set dates = dates|sort %}
             {% set last_date = dates[-1] %}
             
-            <!-- Calculate current streak - using a flag instead of break -->
-            {% set streak.current = 1 %}
-            {% set streak.continue_counting = namespace(value=true) %}
+            <!-- Calculate current streak - using a simpler approach -->
+            {% set streak_counter = namespace(current=1, should_continue=true) %}
             {% for i in range(dates|length - 2, -1, -1) %}
-                {% if streak.continue_counting.value %}
+                {% if streak_counter.should_continue %}
                     {% set prev_date = dates[i] %}
                     {% set days_diff = 1 %} <!-- Placeholder - ideally calculate actual difference -->
                     
                     {% if days_diff == 1 %}
-                        {% set streak.current = streak.current + 1 %}
+                        {% set streak_counter.current = streak_counter.current + 1 %}
                     {% else %}
-                        {% set streak.continue_counting.value = false %}
+                        {% set streak_counter.should_continue = false %}
                     {% endif %}
                 {% endif %}
             {% endfor %}
+            
+            {% set streak.current = streak_counter.current %}
             
             <div class="stat-card streak-card">
                 <div class="stat-title">Current Streak</div>
@@ -941,31 +942,70 @@
             if (topicProgressCtx) {
                 // Generate dynamic colors for better visualization
                 const generateColors = (count) => {
+                    // Expanded color palette with more options
                     const baseColors = [
-                        'rgba(255, 99, 132, 0.7)',
-                        'rgba(54, 162, 235, 0.7)',
-                        'rgba(255, 206, 86, 0.7)',
-                        'rgba(75, 192, 192, 0.7)',
-                        'rgba(153, 102, 255, 0.7)',
-                        'rgba(255, 159, 64, 0.7)'
+                        'rgba(255, 99, 132, 0.7)',    // Pink
+                        'rgba(54, 162, 235, 0.7)',    // Blue
+                        'rgba(255, 206, 86, 0.7)',    // Yellow
+                        'rgba(75, 192, 192, 0.7)',    // Teal
+                        'rgba(153, 102, 255, 0.7)',   // Purple
+                        'rgba(255, 159, 64, 0.7)',    // Orange
+                        'rgba(129, 199, 132, 0.7)',   // Green
+                        'rgba(121, 134, 203, 0.7)',   // Indigo
+                        'rgba(255, 138, 101, 0.7)',   // Deep Orange
+                        'rgba(158, 219, 177, 0.7)',   // Mint
+                        'rgba(234, 128, 252, 0.7)',   // Light Purple
+                        'rgba(183, 223, 253, 0.7)'    // Light Blue
                     ];
                     
                     const borderColors = [
-                        'rgba(255, 99, 132, 1)',
-                        'rgba(54, 162, 235, 1)',
-                        'rgba(255, 206, 86, 1)',
-                        'rgba(75, 192, 192, 1)',
-                        'rgba(153, 102, 255, 1)',
-                        'rgba(255, 159, 64, 1)'
+                        'rgba(255, 99, 132, 1)',      // Pink
+                        'rgba(54, 162, 235, 1)',      // Blue
+                        'rgba(255, 206, 86, 1)',      // Yellow
+                        'rgba(75, 192, 192, 1)',      // Teal
+                        'rgba(153, 102, 255, 1)',     // Purple
+                        'rgba(255, 159, 64, 1)',      // Orange
+                        'rgba(129, 199, 132, 1)',     // Green
+                        'rgba(121, 134, 203, 1)',     // Indigo
+                        'rgba(255, 138, 101, 1)',     // Deep Orange
+                        'rgba(158, 219, 177, 1)',     // Mint
+                        'rgba(234, 128, 252, 1)',     // Light Purple
+                        'rgba(183, 223, 253, 1)'      // Light Blue
                     ];
                     
                     // Return colors based on count
                     const bgColors = [];
                     const borders = [];
                     
-                    for (let i = 0; i < count; i++) {
-                        bgColors.push(baseColors[i % baseColors.length]);
-                        borders.push(borderColors[i % borderColors.length]);
+                    // Smart color assignment to avoid adjacent repetition
+                    if (count <= baseColors.length) {
+                        // If we have enough colors, just use them directly
+                        for (let i = 0; i < count; i++) {
+                            bgColors.push(baseColors[i]);
+                            borders.push(borderColors[i]);
+                        }
+                    } else {
+                        // If we need more colors than we have in our palette
+                        const colorCount = baseColors.length;
+                        let lastIndex = -1;
+                        
+                        for (let i = 0; i < count; i++) {
+                            // Choose next color avoiding the last one used when repeating
+                            let index;
+                            if (i >= colorCount) {
+                                // When we start repeating, make sure we don't use adjacent duplicates
+                                // Find an index different from the last one used
+                                do {
+                                    index = Math.floor(Math.random() * colorCount);
+                                } while (index === lastIndex);
+                            } else {
+                                index = i;
+                            }
+                            
+                            bgColors.push(baseColors[index]);
+                            borders.push(borderColors[index]);
+                            lastIndex = index;
+                        }
                     }
                     
                     return { background: bgColors, border: borders };
