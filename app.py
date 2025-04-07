@@ -992,6 +992,9 @@ def delete_topic_resource(subject_name, test_id, topic_id, resource_id):
     """Delete a resource from a topic"""
     # Load existing details
     details = load_subject_details(subject_name)
+    
+    # Load progress records
+    progress_records = load_progress_records(subject_name, test_id)
 
     # Find the test
     test = next((t for t in details.get('tests', []) if isinstance(t, dict) and t.get('id') == test_id), None)
@@ -1003,12 +1006,21 @@ def delete_topic_resource(subject_name, test_id, topic_id, resource_id):
         if topic and isinstance(topic.get('resources'), list):
             # Remove the resource
             topic['resources'] = [r for r in topic['resources'] if r.get('id') != resource_id]
+            
+            # Remove progress records for this resource
+            if 'records' in progress_records:
+                progress_records['records'] = [r for r in progress_records['records'] 
+                                              if r.get('resource_id') != resource_id]
+                
+                # Save updated progress records
+                save_progress_records(subject_name, test_id, progress_records)
 
             # Save updated details
             save_subject_details(subject_name, details)
             flash('Resource deleted successfully!', 'success')
 
-    return redirect(url_for('edit_test_topics', subject_name=subject_name, test_id=test_id))
+    return redirect(url_for('subject_details', subject_name=subject_name))
+
 
 
 @app.route('/subject/<subject_name>/test/<test_id>/delete_topic/<topic_id>', methods=['POST'])
@@ -1016,11 +1028,29 @@ def delete_test_topic(subject_name, test_id, topic_id):
     """Delete a topic from a test"""
     # Load existing details
     details = load_subject_details(subject_name)
+    
+    # Load progress records
+    progress_records = load_progress_records(subject_name, test_id)
 
     # Find the test
     test = next((t for t in details.get('tests', []) if isinstance(t, dict) and t.get('id') == test_id), None)
 
     if test and isinstance(test.get('topics'), list):
+        # Find the topic to be deleted
+        topic_to_delete = next((t for t in test['topics'] if isinstance(t, dict) and t.get('id') == topic_id), None)
+        
+        if topic_to_delete and isinstance(topic_to_delete.get('resources'), list):
+            # Get all resource IDs from the topic to be deleted
+            resource_ids = [r.get('id') for r in topic_to_delete.get('resources') if isinstance(r, dict) and 'id' in r]
+            
+            # Remove progress records for all resources in the topic
+            if 'records' in progress_records:
+                progress_records['records'] = [r for r in progress_records['records'] 
+                                              if r.get('resource_id') not in resource_ids]
+                
+                # Save updated progress records
+                save_progress_records(subject_name, test_id, progress_records)
+        
         # Remove the topic
         test['topics'] = [t for t in test['topics'] if t.get('id') != topic_id]
 
@@ -1028,7 +1058,7 @@ def delete_test_topic(subject_name, test_id, topic_id):
         save_subject_details(subject_name, details)
         flash('Topic deleted successfully!', 'success')
 
-    return redirect(url_for('edit_test_topics', subject_name=subject_name, test_id=test_id))
+    return redirect(url_for('subject_details', subject_name=subject_name))
 
 
 @app.route('/track-progress/<subject_name>/<test_id>', methods=['GET'])
@@ -1172,66 +1202,26 @@ def test_statistics(subject_name, test_id):
         # Calculate progress
         test['progress'] = calculate_progress(test, subject_name)
 
-        # Load progress records
-        progress_records = load_progress_records(subject_name, test_id)
-        records = progress_records.get('records', [])
-        
-        # Get date counts for chart (already sorted by date)
+        # Get date counts for chart
         date_counts = get_date_counts(subject_name, test_id)
 
         # Get topic counts for chart
         topic_counts = get_topic_counts(subject_name, test_id)
         
-        # Process resources to include completion data
-        for topic in test.get('topics', []):
-            if isinstance(topic, dict) and 'resources' in topic:
-                for resource in topic.get('resources', []):
-                    # Count completed resources
-                    resource['completed'] = len([r for r in records
-                                               if r.get('resource_id') == resource.get('id')])
-                    
-                    # Add scores if they exist
-                    resource['scores'] = []
-                    for record in records:
-                        if record.get('resource_id') == resource.get('id') and 'score' in record:
-                            resource['scores'].append(record.get('score'))
-        
-        # Collect all scores for score analysis
-        all_scores = []
-        for record in records:
-            if 'score' in record and record.get('score') is not None:
-                all_scores.append(record.get('score'))
-                
-        # Calculate average score
-        avg_score = sum(all_scores) / len(all_scores) if all_scores else 0
-        
-        # Get unique dates from records
-        unique_dates = set()
-        for record in records:
-            record_date = record.get('date')
-            if record_date:
-                unique_dates.add(record_date)
-        
-        sorted_dates = sorted(list(unique_dates))
-
-        # Calculate days remaining if test has a date
-        if 'date' in test:
-            try:
-                test_date = datetime.strptime(test['date'], '%Y-%m-%d').date()
-                today = date.today()
-                test['days_remaining'] = (test_date - today).days
-            except (ValueError, TypeError):
-                test['days_remaining'] = 0
+        # Add days_remaining calculation for the template
+        try:
+            test_date = datetime.strptime(test['date'], '%Y-%m-%d').date()
+            today = date.today()
+            test['days_remaining'] = (test_date - today).days
+        except (ValueError, TypeError, KeyError):
+            test['days_remaining'] = 0
 
         return render_template('test_statistics.html',
-                           subject_name=subject_name,
-                           test=test,
-                           date_counts=date_counts,
-                           topic_counts=topic_counts,
-                           all_scores=all_scores,
-                           avg_score=avg_score,
-                           sorted_dates=sorted_dates,
-                           records=records)
+                               subject_name=subject_name,
+                               test=test,
+                               date_counts=date_counts,
+                               topic_counts=topic_counts,
+                               today=date.today())  # Pass today's date to template
 
     flash('Test not found!', 'error')
     return redirect(url_for('subject_details', subject_name=subject_name))

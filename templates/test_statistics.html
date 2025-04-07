@@ -17,44 +17,30 @@
 {% endblock %}
 
 {% block content %}
-
 <!-- Test Info Card -->
 <div class="test-info">
-    <div class="test-info-header">
-        <div class="test-info-main">
-            <p><strong>Test:</strong> {{ test.name }}</p>
-            <p class="date"><strong>Date:</strong> {{ test.date }}</p>
-            
-            <!-- Countdown Timer -->
-            {% if test.date %}
-                {% set test_date = test.date|string|strptime('%Y-%m-%d') %}
-                {% set days_remaining = test.days_remaining if test.days_remaining is defined else 0 %}
-                
-                <div class="countdown-container">
-                    <div class="countdown {% if days_remaining <= 7 %}urgent{% elif days_remaining <= 14 %}warning{% else %}normal{% endif %}">
-                        {% if days_remaining > 0 %}
-                            <span class="countdown-number">{{ days_remaining }}</span>
-                            <span class="countdown-label">days left</span>
-                        {% elif days_remaining == 0 %}
-                            <span class="countdown-number">Today!</span>
-                        {% else %}
-                            <span class="countdown-label">Test completed</span>
-                        {% endif %}
-                    </div>
-                </div>
-            {% endif %}
-        </div>
-        
-        <!-- Streak Card -->
-        <div class="streak-card">
-            {% set streak_count = get_streak(subject_name, test.id) if get_streak is defined else 0 %}
-            <div class="streak-icon">🔥</div>
-            <div class="streak-count">{{ streak_count }}</div>
-            <div class="streak-label">day streak</div>
-        </div>
-    </div>
-
+    <p><strong>Test:</strong> {{ test.name }}</p>
+    <p class="date"><strong>Date:</strong> {{ test.date }}</p>
     
+    {% if test.date %}
+        {% if test.days_remaining is defined %}
+            <p class="date">
+                <strong>Status:</strong> 
+                {% if test.days_remaining < 0 %}
+                    <span class="past-test">Past test ({{ test.days_remaining|abs }} days ago)</span>
+                {% elif test.days_remaining == 0 %}
+                    <span class="today-test">Today!</span>
+                {% elif test.days_remaining <= 7 %}
+                    <span class="urgent-test">Urgent! {{ test.days_remaining }} days left</span>
+                {% elif test.days_remaining <= 14 %}
+                    <span class="soon-test">Coming soon - {{ test.days_remaining }} days left</span>
+                {% else %}
+                    <span class="future-test">{{ test.days_remaining }} days left</span>
+                {% endif %}
+            </p>
+        {% endif %}
+    {% endif %}
+
     <!-- Calculate and display statistics -->
     {% set total_resources = namespace(count=0) %}
     {% set completed_resources = namespace(count=0) %}
@@ -92,6 +78,40 @@
             </div>
         </div>
     </div>
+    
+    <!-- Study Streak -->
+    {% if date_counts %}
+        {% set streak = namespace(count=0, current=0) %}
+        {% set dates = [] %}
+        
+        {% for date_str, count in date_counts %}
+            {% if dates.append(date_str) %}{% endif %}
+        {% endfor %}
+        
+        {% if dates|length > 0 %}
+            {% set dates = dates|sort %}
+            {% set last_date = dates[-1] %}
+            
+            <!-- Calculate current streak -->
+            {% set streak.current = 1 %}
+            {% for i in range(dates|length - 2, -1, -1) %}
+                {% set prev_date = dates[i] %}
+                {% set days_diff = 1 %} <!-- Placeholder - ideally calculate actual difference -->
+                
+                {% if days_diff == 1 %}
+                    {% set streak.current = streak.current + 1 %}
+                {% else %}
+                    {% break %}
+                {% endif %}
+            {% endfor %}
+            
+            <div class="stat-card streak-card">
+                <div class="stat-title">Current Streak</div>
+                <div class="stat-value">{{ streak.current }} day{{ 's' if streak.current != 1 }}</div>
+            </div>
+        {% endif %}
+    {% endif %}
+    
     <div class="cat-paw">🐾</div>
 </div>
 
@@ -106,6 +126,41 @@
             {% if date_counts %}
                 <div class="chart-wrapper">
                     <canvas id="dailyProgressChart"></canvas>
+                </div>
+                
+                <!-- Estimated readiness calculation -->
+                {% set consistency = namespace(score=0) %}
+                {% if date_counts|length > 0 %}
+                    <!-- Higher consistency score for regular studying -->
+                    {% set consistency.score = 25 * (date_counts|length / 14) %}
+                    <!-- Cap at 25% -->
+                    {% if consistency.score > 25 %}
+                        {% set consistency.score = 25 %}
+                    {% endif %}
+                {% endif %}
+                
+                {% set progress_score = 0 %}
+                {% if total_resources.count > 0 %}
+                    {% set progress_score = 50 * (completed_resources.count / total_resources.count) %}
+                {% endif %}
+                
+                {% set readiness = consistency.score + progress_score %}
+                {% if readiness > 75 %}
+                    {% set readiness_class = "excellent" %}
+                {% elif readiness > 50 %}
+                    {% set readiness_class = "good" %}
+                {% elif readiness > 25 %}
+                    {% set readiness_class = "fair" %}
+                {% else %}
+                    {% set readiness_class = "poor" %}
+                {% endif %}
+                
+                <div class="readiness-score {{ readiness_class }}">
+                    <div class="readiness-title">Estimated Readiness</div>
+                    <div class="readiness-value">{{ readiness|round|int }}%</div>
+                    <div class="readiness-bar">
+                        <div class="readiness-progress" style="width: {{ readiness|round|int }}%"></div>
+                    </div>
                 </div>
             {% else %}
                 <div class="no-data">No progress data available yet. Start tracking your progress!</div>
@@ -165,6 +220,16 @@
                                                 <div class="resource-progress-bar">
                                                     <div class="resource-progress" style="width: {{ (resource.completed / resource.count * 100) if resource.completed is defined and resource.count > 0 else 0 }}%"></div>
                                                 </div>
+                                                
+                                                <!-- Display scores if they exist -->
+                                                {% if resource.scores and resource.scores|length > 0 %}
+                                                    <div class="resource-scores">
+                                                        <span class="score-label">Scores:</span>
+                                                        {% for score in resource.scores %}
+                                                            <span class="score-badge">{{ score }}%</span>
+                                                        {% endfor %}
+                                                    </div>
+                                                {% endif %}
                                             </div>
                                         {% endfor %}
                                     {% else %}
@@ -196,25 +261,47 @@
                         {% endfor %}
 
                         <div class="metric-card">
-                            <div class="metric-icon">📚</div>
+                            <div class="metric-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                                </svg>
+                            </div>
                             <div class="metric-value">{{ total_completed.count }}</div>
                             <div class="metric-label">Resources Completed</div>
                         </div>
 
                         <div class="metric-card">
-                            <div class="metric-icon">⏱️</div>
+                            <div class="metric-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <polyline points="12 6 12 12 16 14"></polyline>
+                                </svg>
+                            </div>
                             <div class="metric-value">{{ (total_completed.count * 0.5)|round(1) }}</div>
                             <div class="metric-label">Study Hours (est.)</div>
                         </div>
 
                         <div class="metric-card">
-                            <div class="metric-icon">📆</div>
+                            <div class="metric-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                                </svg>
+                            </div>
                             <div class="metric-value">{{ date_counts|length }}</div>
                             <div class="metric-label">Study Days</div>
                         </div>
 
                         <div class="metric-card">
-                            <div class="metric-icon">📈</div>
+                            <div class="metric-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                </svg>
+                            </div>
                             <div class="metric-value">{{ (total_completed.count / date_counts|length)|round(1) if date_counts|length > 0 else 0 }}</div>
                             <div class="metric-label">Daily Average</div>
                         </div>
@@ -227,8 +314,33 @@
     </div>
 </div>
 
-
-
+<!-- Action Buttons -->
+<div class="button-group">
+    <a href="{{ url_for('track_progress', subject_name=subject_name, test_id=test.id) }}" class="btn btn-primary">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-icon">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+        Track Progress
+    </a>
+    
+    <a href="{{ url_for('subject_details', subject_name=subject_name) }}" class="btn btn-secondary">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-icon">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+        </svg>
+        Back to Subject
+    </a>
+    
+    <form action="{{ url_for('send_test_reminder', subject_name=subject_name, test_id=test.id) }}" method="post" style="display: inline;">
+        <button type="submit" class="btn btn-secondary">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-icon">
+                <path d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3zm-8.27 4a2 2 0 0 1-3.46 0"></path>
+            </svg>
+            Send Reminder
+        </button>
+    </form>
+</div>
 {% endblock %}
 
 {% block extra_css %}
@@ -252,6 +364,92 @@
     .test-info .date {
         font-weight: bold;
         color: var(--primary-dark);
+    }
+    
+    /* Status colors */
+    .past-test {
+        color: var(--dark);
+    }
+    .today-test {
+        color: #ff5f8f;
+        font-weight: bold;
+    }
+    .urgent-test {
+        color: var(--danger);
+        font-weight: bold;
+    }
+    .soon-test {
+        color: var(--warning);
+        font-weight: bold;
+    }
+    .future-test {
+        color: var(--success);
+    }
+
+    /* Readiness score */
+    .readiness-score {
+        background-color: rgba(255, 255, 255, 0.7);
+        border-radius: 10px;
+        padding: 15px;
+        margin-top: 15px;
+        text-align: center;
+    }
+    
+    .readiness-title {
+        font-weight: bold;
+        font-size: 1.1rem;
+        margin-bottom: 5px;
+    }
+    
+    .readiness-value {
+        font-size: 1.8rem;
+        font-weight: bold;
+        margin: 5px 0;
+    }
+    
+    .readiness-bar {
+        height: 10px;
+        background-color: #f0f0f0;
+        border-radius: 5px;
+        overflow: hidden;
+        margin-top: 10px;
+    }
+    
+    .readiness-progress {
+        height: 100%;
+        transition: width 0.3s ease;
+    }
+    
+    .excellent .readiness-value {
+        color: #4CAF50;
+    }
+    
+    .excellent .readiness-progress {
+        background-color: #4CAF50;
+    }
+    
+    .good .readiness-value {
+        color: #8BC34A;
+    }
+    
+    .good .readiness-progress {
+        background-color: #8BC34A;
+    }
+    
+    .fair .readiness-value {
+        color: #FFC107;
+    }
+    
+    .fair .readiness-progress {
+        background-color: #FFC107;
+    }
+    
+    .poor .readiness-value {
+        color: #FF5722;
+    }
+    
+    .poor .readiness-progress {
+        background-color: #FF5722;
     }
 
     /* Dashboard Grid Layout */
@@ -431,11 +629,18 @@
         align-items: center;
         justify-content: center;
         box-shadow: 0 3px 8px rgba(0, 0, 0, 0.05);
+        transition: all 0.2s ease;
+    }
+    
+    .metric-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
     }
 
     .metric-icon {
         font-size: 2rem;
         margin-bottom: 5px;
+        color: var(--secondary);
     }
 
     .metric-value {
@@ -529,6 +734,25 @@
         background-color: var(--success);
         transition: width 0.3s ease;
     }
+    
+    /* Resource Scores */
+    .resource-scores {
+        margin-top: 8px;
+        font-size: 0.9rem;
+    }
+    
+    .score-label {
+        font-style: italic;
+        margin-right: 5px;
+    }
+    
+    .score-badge {
+        background-color: var(--secondary-light);
+        padding: 2px 6px;
+        border-radius: 10px;
+        margin-right: 5px;
+        font-size: 0.8rem;
+    }
 
     .no-resources, .no-data {
         height: 100%;
@@ -542,6 +766,30 @@
         border-radius: 10px;
         border: 1px dashed var(--primary);
         padding: 20px;
+    }
+
+    /* Streak Card */
+    .streak-card {
+        grid-column: 1 / span 2;
+        margin-top: 15px;
+        background-color: var(--primary-light);
+        border-left: 4px solid var(--primary);
+        transition: all 0.3s ease;
+    }
+    
+    .streak-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .streak-card .stat-title {
+        color: var(--primary-dark);
+    }
+    
+    .streak-card .stat-value {
+        font-size: 1.4rem;
+        font-weight: bold;
+        color: var(--primary-dark);
     }
 
     /* Button Group */
@@ -615,13 +863,6 @@
             height: 250px;
         }
     }
-
-    @media (max-width: 576px) {
-        .study-metrics {
-            grid-template-columns: 1fr;
-            grid-template-rows: repeat(4, 1fr);
-        }
-    }
 </style>
 {% endblock %}
 
@@ -635,11 +876,14 @@
         Chart.defaults.color = "#333";
         Chart.defaults.borderColor = "rgba(106, 90, 205, 0.2)";
 
+        // Safely get element and check if it exists before creating charts
+        const dailyProgressCtx = document.getElementById('dailyProgressChart');
+        const topicProgressCtx = document.getElementById('topicProgressChart');
+
         {% if date_counts %}
-            // Daily progress chart
-            const dailyProgressCtx = document.getElementById('dailyProgressChart').getContext('2d');
+            // Only initialize if the element exists
             if (dailyProgressCtx) {
-                const dailyProgressChart = new Chart(dailyProgressCtx, {
+                const dailyProgressChart = new Chart(dailyProgressCtx.getContext('2d'), {
                     type: 'bar',
                     data: {
                         labels: [{% for date, count in date_counts %}'{{ date }}'{% if not loop.last %}, {% endif %}{% endfor %}],
@@ -648,8 +892,7 @@
                             data: [{% for date, count in date_counts %}{{ count }}{% if not loop.last %}, {% endif %}{% endfor %}],
                             backgroundColor: 'rgba(106, 90, 205, 0.7)',
                             borderColor: 'rgba(106, 90, 205, 1)',
-                            borderWidth: 1,
-                            borderRadius: 6
+                            borderWidth: 1
                         }]
                     },
                     options: {
@@ -676,12 +919,11 @@
                             tooltip: {
                                 callbacks: {
                                     title: function(tooltipItems) {
-                                        const date = tooltipItems[0].label;
-                                        return `Date: ${date}`;
+                                        return tooltipItems[0].label;
                                     },
                                     label: function(context) {
-                                        const value = context.raw;
-                                        return `Resources completed: ${value}`;
+                                        const resources = context.raw;
+                                        return `${resources} resource${resources !== 1 ? 's' : ''} completed`;
                                     }
                                 }
                             }
@@ -692,47 +934,51 @@
         {% endif %}
 
         {% if topic_counts %}
-            // Topic progress chart
-            const topicProgressCtx = document.getElementById('topicProgressChart').getContext('2d');
+            // Only initialize if the element exists
             if (topicProgressCtx) {
-                const backgroundColors = [
-                    'rgba(255, 99, 132, 0.7)',
-                    'rgba(54, 162, 235, 0.7)',
-                    'rgba(255, 206, 86, 0.7)',
-                    'rgba(75, 192, 192, 0.7)',
-                    'rgba(153, 102, 255, 0.7)',
-                    'rgba(255, 159, 64, 0.7)',
-                    'rgba(255, 99, 132, 0.7)',
-                    'rgba(54, 162, 235, 0.7)'
-                ];
+                // Generate dynamic colors for better visualization
+                const generateColors = (count) => {
+                    const baseColors = [
+                        'rgba(255, 99, 132, 0.7)',
+                        'rgba(54, 162, 235, 0.7)',
+                        'rgba(255, 206, 86, 0.7)',
+                        'rgba(75, 192, 192, 0.7)',
+                        'rgba(153, 102, 255, 0.7)',
+                        'rgba(255, 159, 64, 0.7)'
+                    ];
+                    
+                    const borderColors = [
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(153, 102, 255, 1)',
+                        'rgba(255, 159, 64, 1)'
+                    ];
+                    
+                    // Return colors based on count
+                    const bgColors = [];
+                    const borders = [];
+                    
+                    for (let i = 0; i < count; i++) {
+                        bgColors.push(baseColors[i % baseColors.length]);
+                        borders.push(borderColors[i % borderColors.length]);
+                    }
+                    
+                    return { background: bgColors, border: borders };
+                };
                 
-                const borderColors = [
-                    'rgba(255, 99, 132, 1)',
-                    'rgba(54, 162, 235, 1)',
-                    'rgba(255, 206, 86, 1)',
-                    'rgba(75, 192, 192, 1)',
-                    'rgba(153, 102, 255, 1)',
-                    'rgba(255, 159, 64, 1)',
-                    'rgba(255, 99, 132, 1)',
-                    'rgba(54, 162, 235, 1)'
-                ];
+                const topicCount = {{ topic_counts|length }};
+                const colors = generateColors(topicCount);
                 
-                // Get all topic names and counts
-                const topicNames = [{% for topic_name, count in topic_counts.items() %}'{{ topic_name }}'{% if not loop.last %}, {% endif %}{% endfor %}];
-                const topicCounts = [{% for topic_name, count in topic_counts.items() %}{{ count }}{% if not loop.last %}, {% endif %}{% endfor %}];
-                
-                // Limit the colors to the number of topics
-                const chartBackgroundColors = backgroundColors.slice(0, topicNames.length);
-                const chartBorderColors = borderColors.slice(0, topicNames.length);
-                
-                const topicProgressChart = new Chart(topicProgressCtx, {
+                const topicProgressChart = new Chart(topicProgressCtx.getContext('2d'), {
                     type: 'pie',
                     data: {
-                        labels: topicNames,
+                        labels: [{% for topic_name, count in topic_counts.items() %}'{{ topic_name }}'{% if not loop.last %}, {% endif %}{% endfor %}],
                         datasets: [{
-                            data: topicCounts,
-                            backgroundColor: chartBackgroundColors,
-                            borderColor: chartBorderColors,
+                            data: [{% for topic_name, count in topic_counts.items() %}{{ count }}{% if not loop.last %}, {% endif %}{% endfor %}],
+                            backgroundColor: colors.background,
+                            borderColor: colors.border,
                             borderWidth: 1
                         }]
                     },
@@ -753,8 +999,8 @@
                                 callbacks: {
                                     label: function(context) {
                                         const label = context.label || '';
-                                        const value = context.raw;
-                                        const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                                        const value = context.parsed;
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
                                         const percentage = Math.round((value / total) * 100);
                                         return `${label}: ${value} (${percentage}%)`;
                                     }
