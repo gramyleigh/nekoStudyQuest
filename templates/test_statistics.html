@@ -365,7 +365,7 @@
     </div>
     
     <div class="reminder-content">
-        <form id="reminderForm" action="{{ url_for('add_email_reminder', subject_name=subject_name, test_id=test.id) }}" method="post">
+        <form id="reminderForm" action="{{ url_for('send_test_reminder', subject_name=subject_name, test_id=test.id) }}" method="post">
             <!-- Reminder Type Selection -->
             <div class="reminder-section">
                 <label for="reminderType" class="reminder-label">Reminder Type</label>
@@ -435,11 +435,30 @@
         <div class="active-reminders">
             <h4 class="active-reminders-title">Active Reminders</h4>
             
-            <div id="active-reminders-list">
-                <!-- Reminders will be loaded dynamically via JavaScript -->
-                <div class="loading-reminders">
-                    Loading reminders...
+            <div class="active-reminder-item">
+                <div class="active-reminder-info">
+                    <div class="active-reminder-type">Test Reminder</div>
+                    <div class="active-reminder-schedule">7, 3, 1 days before test at 8:00 AM</div>
                 </div>
+                <button type="button" class="active-reminder-delete">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="active-reminder-item">
+                <div class="active-reminder-info">
+                    <div class="active-reminder-type">Progress Report</div>
+                    <div class="active-reminder-schedule">Weekly on Monday at 9:00 AM</div>
+                </div>
+                <button type="button" class="active-reminder-delete">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                </button>
             </div>
         </div>
     </div>
@@ -1180,22 +1199,9 @@
         transition: all 0.2s ease;
     }
     
-    /* Loading indicator */
-    .loading-reminders {
-        text-align: center;
-        padding: 15px;
-        font-style: italic;
-        color: var(--dark);
-    }
-    
-    .no-reminders {
-        text-align: center;
-        padding: 15px;
-        font-style: italic;
-        color: var(--dark);
-        background-color: rgba(255, 255, 255, 0.5);
-        border-radius: 8px;
-        border: 1px dashed var(--primary-light);
+    .active-reminder-delete:hover {
+        background-color: rgba(255, 179, 192, 0.2);
+        transform: scale(1.1);
     }
 </style>
 {% endblock %}
@@ -1393,7 +1399,6 @@
         const reminderFrequencySelect = document.getElementById('reminderFrequency');
         const daysBeforeOptions = document.querySelector('.days-before-options');
         const customMessageSection = document.querySelector('.custom-message-section');
-        const activeRemindersListElement = document.getElementById('active-reminders-list');
         
         // Toggle reminder widget visibility
         if (reminderToggleBtn && reminderWidget) {
@@ -1405,107 +1410,8 @@
                     setTimeout(() => {
                         reminderWidget.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     }, 100);
-                    
-                    // Load active reminders
-                    loadActiveReminders();
                 }
             });
-        }
-        
-        // Load active reminders via fetch API
-        function loadActiveReminders() {
-            if (activeRemindersListElement) {
-                activeRemindersListElement.innerHTML = '<div class="loading-reminders">Loading reminders...</div>';
-                
-                fetch(`/get-email-reminders/{{ subject_name }}/${encodeURIComponent('{{ test.id }}')}`)
-                    .then(response => response.json())
-                    .then(reminders => {
-                        if (reminders && reminders.length > 0) {
-                            displayReminders(reminders);
-                        } else {
-                            activeRemindersListElement.innerHTML = '<div class="no-reminders">No active reminders. Add one above!</div>';
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error loading reminders:', error);
-                        activeRemindersListElement.innerHTML = '<div class="no-reminders">Error loading reminders. Please try again.</div>';
-                    });
-            }
-        }
-        
-        // Display reminders in the list
-        function displayReminders(reminders) {
-            let html = '';
-            
-            reminders.forEach(reminder => {
-                let scheduleText = '';
-                
-                // Format schedule text based on frequency
-                if (reminder.frequency === 'daily') {
-                    scheduleText = `Daily at ${formatTime(reminder.delivery_time)}`;
-                } else if (reminder.frequency === 'weekly') {
-                    scheduleText = `Weekly at ${formatTime(reminder.delivery_time)}`;
-                } else if (reminder.frequency === 'once') {
-                    scheduleText = `Once at ${formatTime(reminder.delivery_time)}`;
-                } else if (reminder.frequency === 'days_before' && reminder.days_before) {
-                    const daysText = reminder.days_before.map(day => {
-                        if (day === '0') return 'day of test';
-                        return `${day} days before`;
-                    }).join(', ');
-                    scheduleText = `${daysText} at ${formatTime(reminder.delivery_time)}`;
-                } else if (reminder.frequency === 'milestone') {
-                    scheduleText = `At progress milestones (25%, 50%, 75%)`;
-                }
-                
-                // Format reminder type
-                let typeText = '';
-                if (reminder.reminder_type === 'test_reminder') {
-                    typeText = 'Test Reminder';
-                } else if (reminder.reminder_type === 'progress_report') {
-                    typeText = 'Progress Report';
-                } else if (reminder.reminder_type === 'completion_alert') {
-                    typeText = 'Completion Alert';
-                } else if (reminder.reminder_type === 'study_streak') {
-                    typeText = 'Streak Notification';
-                } else if (reminder.reminder_type === 'custom') {
-                    typeText = 'Custom Message';
-                }
-                
-                html += `
-                    <div class="active-reminder-item">
-                        <div class="active-reminder-info">
-                            <div class="active-reminder-type">${typeText}</div>
-                            <div class="active-reminder-schedule">${scheduleText}</div>
-                        </div>
-                        <form action="/delete-email-reminder/${reminder.id}" method="post" style="display: inline;">
-                            <button type="submit" class="active-reminder-delete" onclick="return confirm('Are you sure you want to delete this reminder?');">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <polyline points="3 6 5 6 21 6"></polyline>
-                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                </svg>
-                            </button>
-                        </form>
-                    </div>
-                `;
-            });
-            
-            activeRemindersListElement.innerHTML = html;
-        }
-        
-        // Format time from 24-hour to 12-hour format
-        function formatTime(time24) {
-            if (!time24) return '8:00 AM';
-            
-            const [hourStr, minuteStr] = time24.split(':');
-            let hour = parseInt(hourStr, 10);
-            const minute = minuteStr || '00';
-            const period = hour >= 12 ? 'PM' : 'AM';
-            
-            // Convert to 12-hour format
-            hour = hour % 12;
-            hour = hour ? hour : 12; // Convert 0 to 12
-            
-            return `${hour}:${minute} ${period}`;
         }
         
         // Close reminder widget
