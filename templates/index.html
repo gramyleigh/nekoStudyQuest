@@ -265,13 +265,24 @@
             background-position: center;
             background-size: contain;
         }
-
+        
         .widget-title.streak::before {
             content: "";
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23546079' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 21c-3.5 0-6-2.5-6-6 0-3 4-10 6-10 2 0 6 7 6 10 0 3.5-2.5 6-6 6z'%3E%3C/path%3E%3Cpath d='M12 21c-1.5 0-3-1-3-3 0-1.5 2-5 3-5 1 0 3 3.5 3 5 0 2-1.5 3-3 3z'%3E%3C/path%3E%3C/svg%3E");
             display: inline-block;
             width: 30px;
             height: 30px;
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: contain;
+        }
+
+        .widget-title.timer::before {
+            content: "";
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23546079' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'%3E%3C/circle%3E%3Cpolyline points='12 6 12 12 16 14'%3E%3C/polyline%3E%3C/svg%3E");
+            display: inline-block;
+            width: 22px;
+            height: 22px;
             background-repeat: no-repeat;
             background-position: center;
             background-size: contain;
@@ -295,7 +306,7 @@
             font-family: 'Comic Neue', cursive;
             font-size: 0.9rem;
         }
-
+        
         /* Action buttons styling */
         .widget-actions {
             display: flex;
@@ -391,8 +402,8 @@
             color: var(--dark);
         }
 
-        /* Delete button styling */
-        .delete-subject-btn {
+       /* Delete button styling */
+       .delete-subject-btn {
             position: absolute;
             right: 10px;
             top: 50%;
@@ -637,9 +648,15 @@
             text-decoration: underline;
         }
 
-        /* Past Tests Widget */
+        /* Past Tests Widget - Modified to take half the bottom row */
         .past-tests-widget {
-            grid-column: 1 / span 2;
+            grid-column: 1;
+            grid-row: 3;
+        }
+
+        /* Study Timer Widget - New widget for the right half of the bottom row */
+        .study-timer-widget {
+            grid-column: 2;
             grid-row: 3;
         }
 
@@ -721,6 +738,199 @@
             background-color: var(--secondary-dark);
             transform: translateY(-2px);
             box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        /* Study Timer Widget Styles */
+        .timer-display {
+            font-family: 'Architects Daughter', cursive;
+            font-size: 2.8rem;
+            text-align: center;
+            margin: 10px 0;
+            color: var(--secondary-dark);
+            font-weight: bold;
+            background-color: rgba(255, 255, 255, 0.7);
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.05);
+        }
+
+        .timer-controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .timer-btn {
+            padding: 10px 15px;
+            border-radius: 10px;
+            border: none;
+            font-family: 'Comic Neue', cursive;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+        }
+
+        .timer-btn.start {
+            background-color: var(--success);
+            color: white;
+        }
+
+        .timer-btn.pause {
+            background-color: var(--warning);
+            color: var(--dark);
+        }
+
+        .timer-btn.reset {
+            background-color: var(--danger);
+            color: white;
+        }
+
+        .timer-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        .timer-btn:disabled {
+            background-color: #f0f0f0;
+            color: #aaa;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .timer-btn.active {
+            background-color: var(--secondary-dark);
+        }
+
+        .timer-type-toggle {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .timer-type-btn {
+            padding: 8px 15px;
+            border-radius: 20px;
+            border: 2px solid var(--secondary);
+            background-color: transparent;
+            color: var(--dark);
+            font-family: 'Comic Neue', cursive;
+            font-weight: bold;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .timer-type-btn.active {
+            background-color: var(--secondary);
+            color: white;
+        }
+
+        .timer-target-container {
+            display: none;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .timer-target-container.active {
+            display: block;
+        }
+
+        .timer-target-input {
+            width: 60px;
+            padding: 8px;
+            border: 2px solid var(--secondary-light);
+            border-radius: 8px;
+            font-family: 'Comic Neue', cursive;
+            font-size: 1rem;
+            text-align: center;
+            margin: 0 5px;
+        }
+
+        .timer-target-label {
+            font-family: 'Comic Neue', cursive;
+            font-weight: bold;
+            font-size: 1rem;
+            color: var(--dark);
+        }
+
+        .resource-selection {
+            text-align: center;
+            margin: 15px 0;
+        }
+
+        .resource-selection select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid var(--secondary-light);
+            border-radius: 8px;
+            font-family: 'Comic Neue', cursive;
+            font-size: 0.95rem;
+            background-color: var(--light);
+            color: var(--dark);
+        }
+
+        .timer-records {
+            margin-top: 15px;
+        }
+
+        .timer-records-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--secondary-light);
+        }
+
+        .timer-records-tab {
+            padding: 8px 12px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .timer-records-tab.active {
+            color: var(--secondary-dark);
+            border-bottom: 2px solid var(--secondary-dark);
+        }
+
+        .timer-records-content {
+            display: none;
+            max-height: 120px;
+            overflow-y: auto;
+            padding: 10px 0;
+        }
+
+        .timer-records-content.active {
+            display: block;
+        }
+
+        .timer-record-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 10px;
+            background-color: rgba(255, 255, 255, 0.7);
+            border-radius: 8px;
+            margin-bottom: 6px;
+            font-size: 0.9rem;
+        }
+
+        .cat-mascot {
+            text-align: center;
+            font-size: 2rem;
+            margin: 5px 0;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
         }
 
         /* Floating cat emojis */
@@ -820,6 +1030,7 @@
             text-align: center;
         }
 
+        
         /* Modal styling */
         .modal {
             display: none;
@@ -1012,7 +1223,7 @@
                 grid-template-columns: 1fr;
             }
 
-            .subjects-widget, .study-stats-widget-small, .current-tests-widget, .stats-widget, .past-tests-widget {
+            .subjects-widget, .study-stats-widget-small, .current-tests-widget, .stats-widget, .past-tests-widget, .study-timer-widget {
                 grid-column: 1;
             }
 
@@ -1021,6 +1232,7 @@
             .current-tests-widget { grid-row: 3; }
             .stats-widget { grid-row: 4; }
             .past-tests-widget { grid-row: 5; }
+            .study-timer-widget { grid-row: 6; }
         }
 
         @media (max-width: 768px) {
@@ -1054,6 +1266,70 @@
 
             .study-stats-container {
                 grid-template-columns: 1fr;
+            }
+
+            /* Ensure the subject card is positioned relative */
+            .subject-card {
+              position: relative;
+            }
+
+            /* Edit button hidden by default */
+            .edit-subject-btn {
+              position: absolute;
+              right: 10px;
+              top: 50%;
+              transform: translateY(-50%);
+              background: rgba(255, 255, 255, 0.8);
+              border: none;
+              border-radius: 50%;
+              width: 32px;
+              height: 32px;
+              display: none;
+              cursor: pointer;
+              transition: all 0.2s ease;
+            }
+
+            /* Change appearance on hover of button */
+            .edit-subject-btn:hover {
+              background-color: var(--primary-light);
+              transform: rotate(10deg);
+            }
+
+            /* Show button when the subject card is hovered */
+            .subject-card:hover .edit-subject-btn {
+              display: block;
+            }
+
+            /* Modal overlay */
+            .modal {
+              display: none; /* Hidden by default */
+              position: fixed;
+              z-index: 100; /* Above other elements */
+              left: 0;
+              top: 0;
+              width: 100%;
+              height: 100%;
+              overflow: auto;
+              background-color: rgba(0,0,0,0.4); /* Black with opacity */
+            }
+
+            /* Modal content box */
+            .modal-content {
+              background-color: var(--light);
+              margin: 15% auto;
+              padding: 20px;
+              border: 1px solid var(--primary-light);
+              width: 300px;
+              border-radius: 10px;
+              box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            }
+
+            /* Close button inside modal */
+            .modal-content .close {
+              color: var(--dark);
+              float: right;
+              font-size: 1.5rem;
+              cursor: pointer;
             }
         }
     </style>
@@ -1315,15 +1591,22 @@
                 {% endif %}
             </div>
 
-            <!-- Stats Widget -->
+            <!-- Stats Widget - FIXED -->
             <div class="widget stats-widget">
                 <div class="widget-header">
                     <h2 class="widget-title">Statistics</h2>
+                    <div class="date-range">
+                        <select id="stats-range" onchange="updateStatsTimeRange(this.value)">
+                            <option value="7">Last 7 days</option>
+                            <option value="14">Last 14 days</option>
+                            <option value="30">Last 30 days</option>
+                            <option value="all">All time</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="stats-tabs">
-                    <div class="stats-tab active" data-tab="daily">Daily Progress</div>
-                    <div class="stats-tab" data-tab="subject">By Subject</div>
-
+                    <div class="stats-tab active" data-tab="daily" onclick="switchStatsTab('daily')">Daily Progress</div>
+                    <div class="stats-tab" data-tab="subject" onclick="switchStatsTab('subject')">By Subject</div>
                 </div>
                 <div class="stats-content">
                     <div class="stats-chart-container active" id="daily-chart">
@@ -1426,6 +1709,64 @@
                     <a href="{{ url_for('past_tests') }}" class="view-all-btn">View All Past Tests</a>
                 {% endif %}
             </div>
+
+            <!-- Study Timer Widget - New widget for the right half of the bottom row -->
+            <div class="widget study-timer-widget">
+                <div class="widget-header">
+                    <h2 class="widget-title timer">Study Timer</h2>
+                </div>
+                
+                <div class="timer-type-toggle">
+                    <button class="timer-type-btn active" data-type="stopwatch">Stopwatch</button>
+                    <button class="timer-type-btn" data-type="timer">Timer</button>
+                </div>
+                
+                <div class="timer-target-container" id="timer-target">
+                    <span class="timer-target-label">Study For:</span>
+                    <input type="number" id="timer-minutes" class="timer-target-input" min="1" max="180" value="25">
+                    <span class="timer-target-label">minutes</span>
+                </div>
+                
+                <div class="cat-mascot">
+                    <span id="cat-emoji">😺</span>
+                </div>
+                
+                <div class="timer-display" id="timer-display">00:00:00</div>
+                
+                <div class="resource-selection">
+                    <select id="timer-resource">
+                        <option value="">-- Select a resource to track --</option>
+                        <!-- We'll populate this with JS instead of using load_subject_details -->
+                    </select>
+                </div>
+                
+                <div class="timer-controls">
+                    <button id="start-timer" class="timer-btn start">Start</button>
+                    <button id="pause-timer" class="timer-btn pause" disabled>Pause</button>
+                    <button id="reset-timer" class="timer-btn reset" disabled>Reset</button>
+                </div>
+                
+                <div class="timer-records">
+                    <div class="timer-records-tabs">
+                        <div class="timer-records-tab active" data-tab="recent">Recent Times</div>
+                        <div class="timer-records-tab" data-tab="best">Best Times</div>
+                    </div>
+                    
+                    <div class="timer-records-content active" id="recent-times">
+                        <!-- Recent times will be populated by JavaScript -->
+                        <div class="empty-state">
+                            <p>No recent times recorded yet. Start the timer to track your study time!</p>
+                        </div>
+                    </div>
+                    
+                    <div class="timer-records-content" id="best-times">
+                        <!-- Best times will be populated by JavaScript -->
+                        <div class="empty-state">
+                            <p>No best times recorded yet. Start the timer to track your study time!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -1447,23 +1788,6 @@
     <script>
         // Initialize charts when DOM is ready
         document.addEventListener('DOMContentLoaded', function() {
-            // Add tab switching functionality
-            const statsTabs = document.querySelectorAll('.stats-tab');
-            const statsCharts = document.querySelectorAll('.stats-chart-container');
-
-            statsTabs.forEach(tab => {
-                tab.addEventListener('click', function() {
-                    // Remove active class from all tabs and charts
-                    statsTabs.forEach(t => t.classList.remove('active'));
-                    statsCharts.forEach(c => c.classList.remove('active'));
-
-                    // Add active class to clicked tab and corresponding chart
-                    const tabName = this.dataset.tab;
-                    this.classList.add('active');
-                    document.getElementById(`${tabName}-chart`).classList.add('active');
-                });
-            });
-
             // Set up Chart.js
             Chart.defaults.font.family = "'Comic Neue', cursive";
             Chart.defaults.font.size = 14;
@@ -1473,136 +1797,265 @@
             {% if daily_progress and daily_progress|length > 0 %}
                 // Daily Progress Chart
                 const dailyCtx = document.getElementById('dailyProgressChart').getContext('2d');
-                const dailyChart = new Chart(dailyCtx, {
-                    type: 'line',
-                    data: {
-                        labels: [{% for date, count in daily_progress %}'{{ date }}'{% if not loop.last %}, {% endif %}{% endfor %}],
-                        datasets: [{
-                            label: 'Resources Completed',
-                            data: [{% for date, count in daily_progress %}{{ count }}{% if not loop.last %}, {% endif %}{% endfor %}],
-                            backgroundColor: 'rgba(146, 193, 255, 0.2)',
-                            borderColor: 'rgba(146, 193, 255, 1)',
-                            borderWidth: 2,
-                            tension: 0.3,
-                            pointBackgroundColor: 'rgba(146, 193, 255, 1)',
-                            pointBorderColor: '#fff',
-                            pointRadius: 5
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                ticks: {
-                                    stepSize: 1
+                if (dailyCtx) {
+                    window.dailyChart = new Chart(dailyCtx, {
+                        type: 'line',
+                        data: {
+                            labels: [{% for date, count in daily_progress %}'{{ date }}'{% if not loop.last %}, {% endif %}{% endfor %}],
+                            datasets: [{
+                                label: 'Resources Completed',
+                                data: [{% for date, count in daily_progress %}{{ count }}{% if not loop.last %}, {% endif %}{% endfor %}],
+                                backgroundColor: 'rgba(146, 193, 255, 0.2)',
+                                borderColor: 'rgba(146, 193, 255, 1)',
+                                borderWidth: 2,
+                                tension: 0.3,
+                                pointBackgroundColor: 'rgba(146, 193, 255, 1)',
+                                pointBorderColor: '#fff',
+                                pointRadius: 5,
+                                fill: true
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        stepSize: 1
+                                    }
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    display: false
+                                },
+                                tooltip: {
+                                    mode: 'index',
+                                    intersect: false,
+                                    callbacks: {
+                                        title: function(tooltipItems) {
+                                            return 'Date: ' + tooltipItems[0].label;
+                                        },
+                                        label: function(context) {
+                                            return 'Completed: ' + context.parsed.y + ' resources';
+                                        }
+                                    }
                                 }
                             }
-                        },
-                        plugins: {
-                            legend: {
-                                display: false
-                            }
                         }
-                    }
-                });
+                    });
+                }
             {% endif %}
 
             {% if subject_counts and subject_counts.values()|sum > 0 %}
                 // Subject Progress Chart
                 const subjectCtx = document.getElementById('subjectProgressChart').getContext('2d');
-                const subjectChart = new Chart(subjectCtx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: [{% for subject, count in subject_counts.items() %}'{{ subject }}'{% if not loop.last %}, {% endif %}{% endfor %}],
-                        datasets: [{
-                            data: [{% for subject, count in subject_counts.items() %}{{ count }}{% if not loop.last %}, {% endif %}{% endfor %}],
-                            backgroundColor: [
-                                'rgba(184, 164, 244, 0.7)',
-                                'rgba(146, 193, 255, 0.7)',
-                                'rgba(168, 225, 209, 0.7)',
-                                'rgba(255, 212, 229, 0.7)',
-                                'rgba(255, 179, 192, 0.7)',
-                                'rgba(255, 224, 196, 0.7)'
-                            ],
-                            borderColor: [
-                                'rgba(184, 164, 244, 1)',
-                                'rgba(146, 193, 255, 1)',
-                                'rgba(168, 225, 209, 1)',
-                                'rgba(255, 212, 229, 1)',
-                                'rgba(255, 179, 192, 1)',
-                                'rgba(255, 224, 196, 1)'
-                            ],
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'right',
-                                labels: {
-                                    font: {
-                                        family: "'Comic Neue', cursive",
-                                        size: 12
+                if (subjectCtx) {
+                    window.subjectChart = new Chart(subjectCtx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: [{% for subject, count in subject_counts.items() %}'{{ subject }}'{% if not loop.last %}, {% endif %}{% endfor %}],
+                            datasets: [{
+                                data: [{% for subject, count in subject_counts.items() %}{{ count }}{% if not loop.last %}, {% endif %}{% endfor %}],
+                                backgroundColor: [
+                                    'rgba(184, 164, 244, 0.7)',
+                                    'rgba(146, 193, 255, 0.7)',
+                                    'rgba(168, 225, 209, 0.7)',
+                                    'rgba(255, 212, 229, 0.7)',
+                                    'rgba(255, 179, 192, 0.7)',
+                                    'rgba(255, 224, 196, 0.7)'
+                                ],
+                                borderColor: [
+                                    'rgba(184, 164, 244, 1)',
+                                    'rgba(146, 193, 255, 1)',
+                                    'rgba(168, 225, 209, 1)',
+                                    'rgba(255, 212, 229, 1)',
+                                    'rgba(255, 179, 192, 1)',
+                                    'rgba(255, 224, 196, 1)'
+                                ],
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'right',
+                                    labels: {
+                                        font: {
+                                            family: "'Comic Neue', cursive",
+                                            size: 12
+                                        }
+                                    }
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            const label = context.label || '';
+                                            const value = context.parsed || 0;
+                                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                            const percentage = Math.round((value / total) * 100);
+                                            return `${label}: ${value} (${percentage}%)`;
+                                        }
                                     }
                                 }
                             }
                         }
-                    }
-                });
+                    });
+                }
             {% endif %}
 
             {% if all_tests and all_tests|selectattr('avg_score', 'defined')|list|length > 0 %}
                 // Score Progress Chart
                 const scoreCtx = document.getElementById('scoreProgressChart').getContext('2d');
-                const scoreChart = new Chart(scoreCtx, {
-                    type: 'line',
-                    data: {
-                        labels: [
-                            {% for test in all_tests %}
-                                {% if test.avg_score is defined %}
-                                    '{{ test.test_name }}'{% if not loop.last %}, {% endif %}
-                                {% endif %}
-                            {% endfor %}
-                        ],
-                        datasets: [{
-                            label: 'Average Score',
-                            data: [
+                if (scoreCtx) {
+                    window.scoreChart = new Chart(scoreCtx, {
+                        type: 'line',
+                        data: {
+                            labels: [
                                 {% for test in all_tests %}
                                     {% if test.avg_score is defined %}
-                                        {{ test.avg_score }}{% if not loop.last %}, {% endif %}
+                                        '{{ test.test_name }}'{% if not loop.last %}, {% endif %}
                                     {% endif %}
                                 {% endfor %}
                             ],
-                            borderColor: 'rgba(184, 164, 244, 1)',
-                            backgroundColor: 'rgba(184, 164, 244, 0.1)',
-                            borderWidth: 2,
-                            tension: 0.3,
-                            fill: true
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                max: 100,
-                                ticks: {
-                                    callback: function(value) {
-                                        return value + '%';
+                            datasets: [{
+                                label: 'Average Score',
+                                data: [
+                                    {% for test in all_tests %}
+                                        {% if test.avg_score is defined %}
+                                            {{ test.avg_score }}{% if not loop.last %}, {% endif %}
+                                        {% endif %}
+                                    {% endfor %}
+                                ],
+                                borderColor: 'rgba(184, 164, 244, 1)',
+                                backgroundColor: 'rgba(184, 164, 244, 0.1)',
+                                borderWidth: 2,
+                                tension: 0.3,
+                                fill: true
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    max: 100,
+                                    ticks: {
+                                        callback: function(value) {
+                                            return value + '%';
+                                        }
+                                    }
+                                }
+                            },
+                            plugins: {
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            return `Score: ${context.parsed.y}%`;
+                                        }
                                     }
                                 }
                             }
                         }
-                    }
-                });
+                    });
+                }
             {% endif %}
 
-            // Subject management functionality
+            // Explicitly define the tab switching function
+            window.switchStatsTab = function(tabName) {
+                // Remove active class from all tabs and charts
+                document.querySelectorAll('.stats-tab').forEach(t => {
+                    t.classList.remove('active');
+                });
+                document.querySelectorAll('.stats-chart-container').forEach(c => {
+                    c.classList.remove('active');
+                });
+
+                // Add active class to clicked tab and corresponding chart
+                document.querySelector(`.stats-tab[data-tab="${tabName}"]`).classList.add('active');
+                document.getElementById(`${tabName}-chart`).classList.add('active');
+
+                // Re-render the chart to fix any display issues
+                if (tabName === 'daily' && window.dailyChart) {
+                    window.dailyChart.render();
+                } else if (tabName === 'subject' && window.subjectChart) {
+                    window.subjectChart.render();
+                } else if (tabName === 'score' && window.scoreChart) {
+                    window.scoreChart.render();
+                }
+            }
+
+            // Function to update stats based on time range
+            window.updateStatsTimeRange = function(daysRange) {
+                // Save the selected range to localStorage for persistence
+                localStorage.setItem('statsTimeRange', daysRange);
+                
+                // Get the currently active tab
+                const activeTab = document.querySelector('.stats-tab.active').dataset.tab;
+                
+                // Update charts based on the selected range
+                if (activeTab === 'daily') {
+                    updateDailyChart(daysRange);
+                } else if (activeTab === 'subject') {
+                    updateSubjectChart(daysRange);
+                }
+            }
+
+            // Function to update the daily progress chart
+            function updateDailyChart(daysRange) {
+                {% if daily_progress and daily_progress|length > 0 %}
+                    if (window.dailyChart) {
+                        // Filter data based on range
+                        let filteredData;
+                        let filteredCounts;
+                        if (daysRange === 'all') {
+                            filteredData = [{% for date, count in daily_progress %}'{{ date }}'{% if not loop.last %}, {% endif %}{% endfor %}];
+                            filteredCounts = [{% for date, count in daily_progress %}{{ count }}{% if not loop.last %}, {% endif %}{% endfor %}];
+                        } else {
+                            // Parse the range as a number
+                            const days = parseInt(daysRange);
+                            // Filter to only include the last N days
+                            const allDates = [{% for date, count in daily_progress %}'{{date }}'{% if not loop.last %}, {% endif %}{% endfor %}];
+                            const allCounts = [{% for date, count in daily_progress %}{{ count }}{% if not loop.last %}, {% endif %}{% endfor %}];
+                            
+                            // Take only the most recent days
+                            const startIndex = Math.max(0, allDates.length - days);
+                            filteredData = allDates.slice(startIndex);
+                            filteredCounts = allCounts.slice(startIndex);
+                        }
+                        
+                        // Update chart data
+                        window.dailyChart.data.labels = filteredData;
+                        window.dailyChart.data.datasets[0].data = filteredCounts;
+                        window.dailyChart.update();
+                    }
+                {% endif %}
+            }
+
+            // Function to update the subject chart
+            function updateSubjectChart(daysRange) {
+                {% if subject_counts and subject_counts.values()|sum > 0 %}
+                    if (window.subjectChart) {
+                        // For simplicity we're not filtering subject data by date here
+                        // In a real implementation, you would fetch filtered data from the server
+                        window.subjectChart.update();
+                    }
+                {% endif %}
+            }
+
+            // Initialize time range from localStorage
+            const savedRange = localStorage.getItem('statsTimeRange') || '7';
+            const rangeSelect = document.getElementById('stats-range');
+            if (rangeSelect) {
+                rangeSelect.value = savedRange;
+                updateStatsTimeRange(savedRange);
+            }
+
+             // Subject management functionality
             // Function to open the add subject modal
             window.openAddSubjectModal = function() {
                 document.getElementById('addSubjectModal').style.display = 'block';
@@ -1845,7 +2298,478 @@
                     window.location.reload();
                 }
             }
+
+            // Toggle todo completion
+            window.toggleTodo = function(taskId) {
+                fetch(`/toggle-todo/${taskId}`, {
+                    method: 'POST'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const todoItem = document.querySelector(`.todo-item[data-id="${taskId}"]`);
+                        const todoCheckbox = todoItem.querySelector('.todo-checkbox');
+                        const todoText = todoItem.querySelector('.todo-text');
+
+                        if (data.completed) {
+                            todoCheckbox.classList.add('checked');
+                            todoText.classList.add('completed');
+                        } else {
+                            todoCheckbox.classList.remove('checked');
+                            todoText.classList.remove('completed');
+                        }
+                    } else {
+                        alert(data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error toggling todo:', error);
+                });
+            };
+
+            // Fetch resource data from the server
+            function fetchResourceData() {
+                // Make a fetch request to get resources
+                fetch('/get-resources')
+                    .then(response => response.json())
+                    .then(data => {
+                        populateResourceOptions(data);
+                    })
+                    .catch(error => {
+                        console.error('Error fetching resources:', error);
+                        // Use placeholder resources if fetch fails
+                        populatePlaceholderResources();
+                    });
+            }
+
+            // Populate resource dropdown with placeholder data
+            function populatePlaceholderResources() {
+                const resourceSelect = document.getElementById('timer-resource');
+                
+                // Add example resources for each subject
+                {% if subjects %}
+                    {% for subject in subjects %}
+                        const option{{ loop.index }} = document.createElement('option');
+                        option{{ loop.index }}.value = '{{ subject }}|example-test|example-topic|example-resource';
+                        option{{ loop.index }}.textContent = '{{ subject }} - Example Test - Example Topic - Example Resource';
+                        resourceSelect.appendChild(option{{ loop.index }});
+                    {% endfor %}
+                {% endif %}
+            }
+
+            // Populate resource dropdown with real data
+            function populateResourceOptions(data) {
+                const resourceSelect = document.getElementById('timer-resource');
+                
+                // Clear existing options except the first one
+                while (resourceSelect.options.length > 1) {
+                    resourceSelect.remove(1);
+                }
+                
+                // Add real resources if available
+                if (data && data.resources) {
+                    data.resources.forEach(resource => {
+                        const option = document.createElement('option');
+                        option.value = `${resource.subject}|${resource.testId}|${resource.topicId}|${resource.id}`;
+                        option.textContent = `${resource.subject} - ${resource.testName} - ${resource.topicName} - ${resource.name}`;
+                        resourceSelect.appendChild(option);
+                    });
+                } else {
+                    // Use placeholder resources if no data
+                    populatePlaceholderResources();
+                }
+            }
+
+            // Call fetchResourceData when page loads
+            // fetchResourceData();
+            // For now, just use placeholder resources
+            populatePlaceholderResources();
+
+            // Study Timer Functionality
+            // Variables to track timer state
+            let timerInterval = null;
+            let startTime = 0;
+            let elapsedTime = 0;
+            let timerRunning = false;
+            let timerType = 'stopwatch'; // or 'timer'
+            let endTime = 0;
+
+            // DOM elements
+            const timerDisplay = document.getElementById('timer-display');
+            const startButton = document.getElementById('start-timer');
+            const pauseButton = document.getElementById('pause-timer');
+            const resetButton = document.getElementById('reset-timer');
+            const timerResource = document.getElementById('timer-resource');
+            const timerMinutes = document.getElementById('timer-minutes');
+            const timerTargetContainer = document.getElementById('timer-target');
+            const catEmoji = document.getElementById('cat-emoji');
+            const timerTypeBtns = document.querySelectorAll('.timer-type-btn');
+            const recordTabs = document.querySelectorAll('.timer-records-tab');
+            const recordContents = document.querySelectorAll('.timer-records-content');
+
+            // Cat emojis for different timer states
+            const catStates = {
+                idle: '😺',
+                studying: '📚😸',
+                paused: '😼',
+                completed: '🎉😻',
+                almostDone: '⏰😿'
+            };
+
+            // Format time as HH:MM:SS
+            function formatTime(timeInMilliseconds) {
+                const totalSeconds = Math.floor(timeInMilliseconds / 1000);
+                const hours = Math.floor(totalSeconds / 3600);
+                const minutes = Math.floor((totalSeconds % 3600) / 60);
+                const seconds = totalSeconds % 60;
+                
+                return [
+                    hours.toString().padStart(2, '0'),
+                    minutes.toString().padStart(2, '0'),
+                    seconds.toString().padStart(2, '0')
+                ].join(':');
+            }
+
+            // Update timer display
+            function updateTimerDisplay() {
+                if (timerType === 'stopwatch') {
+                    const currentTime = Date.now();
+                    elapsedTime = currentTime - startTime;
+                    timerDisplay.textContent = formatTime(elapsedTime);
+                    
+                    // Update cat emoji based on study time
+                    if (elapsedTime > 15 * 60 * 1000) { // After 15 minutes
+                        catEmoji.textContent = catStates.studying;
+                    }
+                } else {
+                    // Timer mode (countdown)
+                    const remainingTime = Math.max(0, endTime - Date.now());
+                    timerDisplay.textContent = formatTime(remainingTime);
+                    
+                    // Update cat emoji based on remaining time
+                    if (remainingTime <= 0) {
+                        catEmoji.textContent = catStates.completed;
+                        clearInterval(timerInterval);
+                        timerRunning = false;
+                        startButton.disabled = false;
+                        pauseButton.disabled = true;
+                        // Notify the user
+                        if (Notification.permission === 'granted') {
+                            new Notification('Study Time Complete!', {
+                                body: 'Great job! Your study session is complete.',
+                                icon: '/static/images/cat_icon.png'
+                            });
+                        }
+                        // Play a sound if available
+                        const audio = new Audio('/static/sounds/complete.mp3');
+                        audio.play().catch(e => console.log('Audio play failed:', e));
+                        
+                        // Save the timer record
+                        const targetMinutes = parseInt(timerMinutes.value) || 25;
+                        saveTimerRecord(targetMinutes * 60 * 1000, true);
+                    } else if (remainingTime < 60 * 1000) { // Less than 1 minute left
+                        catEmoji.textContent = catStates.almostDone;
+                    }
+                }
+            }
+
+            // Start timer
+            startButton.addEventListener('click', function() {
+                if (timerRunning) return;
+                
+                if (timerType === 'stopwatch') {
+                    startTime = Date.now() - elapsedTime;
+                } else {
+                    // Get minutes from input
+                    const targetMinutes = parseInt(timerMinutes.value) || 25;
+                    endTime = Date.now() + (targetMinutes * 60 * 1000);
+                }
+                
+                timerInterval = setInterval(updateTimerDisplay, 1000);
+                timerRunning = true;
+                startButton.disabled = true;
+                pauseButton.disabled = false;
+                resetButton.disabled = false;
+                
+                // Update cat emoji
+                catEmoji.textContent = catStates.studying;
+            });
+
+            // Pause timer
+            pauseButton.addEventListener('click', function() {
+                if (!timerRunning) return;
+                
+                clearInterval(timerInterval);
+                timerRunning = false;
+                startButton.disabled = false;
+                pauseButton.disabled = true;
+                
+                // Update cat emoji
+                catEmoji.textContent = catStates.paused;
+            });
+
+            // Reset timer
+            resetButton.addEventListener('click', function() {
+                clearInterval(timerInterval);
+                
+                // Save current time before resetting if not already paused
+                if (timerRunning) {
+                    if (timerType === 'stopwatch') {
+                        saveTimerRecord(elapsedTime);
+                    }
+                }
+                
+                elapsedTime = 0;
+                timerRunning = false;
+                startButton.disabled = false;
+                pauseButton.disabled = true;
+                resetButton.disabled = true;
+                
+                if (timerType === 'stopwatch') {
+                    timerDisplay.textContent = '00:00:00';
+                } else {
+                    const targetMinutes = parseInt(timerMinutes.value) || 25;
+                    timerDisplay.textContent = `${String(targetMinutes).padStart(2, '0')}:00:00`;
+                }
+                
+                // Update cat emoji
+                catEmoji.textContent = catStates.idle;
+            });
+
+            // Toggle timer type
+            timerTypeBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    // Only allow changing when timer is not running
+                    if (timerRunning) {
+                        alert('Please pause the timer before changing the timer type.');
+                        return;
+                    }
+                    
+                    // Remove active class from all buttons
+                    timerTypeBtns.forEach(b => b.classList.remove('active'));
+                    
+                    // Add active class to clicked button
+                    this.classList.add('active');
+                    
+                    // Update timer type
+                    timerType = this.dataset.type;
+                    
+                    // Show/hide timer target input based on type
+                    if (timerType === 'timer') {
+                        timerTargetContainer.classList.add('active');
+                        const targetMinutes = parseInt(timerMinutes.value) || 25;
+                        timerDisplay.textContent = `${String(targetMinutes).padStart(2, '0')}:00:00`;
+                    } else {
+                        timerTargetContainer.classList.remove('active');
+                        timerDisplay.textContent = '00:00:00';
+                    }
+                    
+                    // Reset timer
+                    clearInterval(timerInterval);
+                    elapsedTime = 0;
+                    timerRunning = false;
+                    startButton.disabled = false;
+                    pauseButton.disabled = true;
+                    resetButton.disabled = true;
+                    
+                    // Update cat emoji
+                    catEmoji.textContent = catStates.idle;
+                });
+            });
+
+            // Function to save timer record
+            function saveTimerRecord(duration, isCompleted = false) {
+                // Only save if a resource is selected
+                if (!timerResource.value) return;
+                
+                // Parse the resource value: subject|test|topic|resourceId
+                const [subject, testId, topicId, resourceId] = timerResource.value.split('|');
+                
+                // Get the resource name from the select option
+                const resourceName = timerResource.options[timerResource.selectedIndex].text;
+                
+                // Create a record
+                const record = {
+                    id: Date.now().toString(),
+                    subject: subject,
+                    testId: testId,
+                    topicId: topicId,
+                    resourceId: resourceId,
+                    resourceName: resourceName,
+                    duration: duration,
+                    formattedDuration: formatTime(duration),
+                    timestamp: new Date().toISOString(),
+                    date: new Date().toLocaleDateString(),
+                    isCompleted: isCompleted,
+                    type: timerType
+                };
+                
+                // Save to localStorage
+                saveRecordToLocalStorage(record);
+                
+                // Update display
+                displayTimerRecords();
+                
+                // TODO: Save to server if needed
+                saveTimerRecordToServer(record);
+            }
+
+            // Function to save record to localStorage
+            function saveRecordToLocalStorage(record) {
+                // Get existing records
+                let timerRecords = JSON.parse(localStorage.getItem('timerRecords')) || [];
+                
+                // Add new record
+                timerRecords.push(record);
+                
+                // Sort by timestamp (newest first)
+                timerRecords.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                
+                // Keep only the latest 50 records
+                if (timerRecords.length > 50) {
+                    timerRecords = timerRecords.slice(0, 50);
+                }
+                
+                // Save back to localStorage
+                localStorage.setItem('timerRecords', JSON.stringify(timerRecords));
+            }
+
+            // Function to save record to server (placeholder)
+            function saveTimerRecordToServer(record) {
+                // This is a placeholder function
+                // In a real implementation, you would send the record to the server via fetch
+                console.log('Saving timer record to server:', record);
+                
+                /* Example:
+                fetch('/save-timer-record', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(record)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Success:', data);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+                */
+            }
+
+            // Function to display timer records
+            function displayTimerRecords() {
+                // Get records from localStorage
+                const timerRecords = JSON.parse(localStorage.getItem('timerRecords')) || [];
+                
+                // Display recent records
+                const recentTimesContainer = document.getElementById('recent-times');
+                if (timerRecords.length > 0) {
+                    // Clear the container
+                    recentTimesContainer.innerHTML = '';
+                    
+                    // Add the 5 most recent records
+                    const recentRecords = timerRecords.slice(0, 5);
+                    
+                    recentRecords.forEach(record => {
+                        const recordItem = document.createElement('div');
+                        recordItem.className = 'timer-record-item';
+                        
+                        const resourceEl = document.createElement('div');
+                        // Extract just the resource name from the full path
+                        const resourceNameParts = record.resourceName.split(' - ');
+                        const resourceNameOnly = resourceNameParts[resourceNameParts.length - 1];
+                        resourceEl.textContent = resourceNameOnly;
+                        
+                        const timeEl = document.createElement('div');
+                        timeEl.textContent = record.formattedDuration;
+                        
+                        recordItem.appendChild(resourceEl);
+                        recordItem.appendChild(timeEl);
+                        
+                        recentTimesContainer.appendChild(recordItem);
+                    });
+                } else {
+                    recentTimesContainer.innerHTML = `
+                        <div class="empty-state">
+                            <p>No recent times recorded yet. Start the timer to track your study time!</p>
+                        </div>
+                    `;
+                }
+                
+                // Display best records (leaderboard)
+                const bestTimesContainer = document.getElementById('best-times');
+                if (timerRecords.length > 0) {
+                    // Clear the container
+                    bestTimesContainer.innerHTML = '';
+                    
+                    // Create a map to find the best times for each resource
+                    const resourceBestTimes = {};
+                    
+                    timerRecords.forEach(record => {
+                        if (!resourceBestTimes[record.resourceId] || 
+                            resourceBestTimes[record.resourceId].duration < record.duration) {
+                            resourceBestTimes[record.resourceId] = record;
+                        }
+                    });
+                    
+                    // Convert map to array and sort by duration (longest first)
+                    const bestRecords = Object.values(resourceBestTimes)
+                        .sort((a, b) => b.duration - a.duration)
+                        .slice(0, 5);
+                    
+                    bestRecords.forEach(record => {
+                        const recordItem = document.createElement('div');
+                        recordItem.className = 'timer-record-item';
+                        
+                        const resourceEl = document.createElement('div');
+                        // Extract just the resource name from the full path
+                        const resourceNameParts = record.resourceName.split(' - ');
+                        const resourceNameOnly = resourceNameParts[resourceNameParts.length - 1];
+                        resourceEl.textContent = resourceNameOnly;
+                        
+                        const timeEl = document.createElement('div');
+                        timeEl.textContent = record.formattedDuration;
+                        
+                        recordItem.appendChild(resourceEl);
+                        recordItem.appendChild(timeEl);
+                        
+                        bestTimesContainer.appendChild(recordItem);
+                    });
+                } else {
+                    bestTimesContainer.innerHTML = `
+                        <div class="empty-state">
+                            <p>No best times recorded yet. Start the timer to track your study time!</p>
+                        </div>
+                    `;
+                }
+            }
+
+            // Switch between records tabs
+            recordTabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    // Remove active class from all tabs and content
+                    recordTabs.forEach(t => t.classList.remove('active'));
+                    recordContents.forEach(c => c.classList.remove('active'));
+                    
+                    // Add active class to clicked tab and corresponding content
+                    const tabName = this.dataset.tab;
+                    this.classList.add('active');
+                    document.getElementById(`${tabName}-times`).classList.add('active');
+                });
+            });
+
+            // Initialize timer display
+            displayTimerRecords();
+            
+            // Set up notifications
+            if ('Notification' in window) {
+                if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+                    Notification.requestPermission();
+                }
+            }
         });
     </script>
 </body>
-</html>
+</html> 
