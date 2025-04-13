@@ -861,20 +861,80 @@
             color: var(--dark);
         }
 
+        /* Add these styles to your CSS for the timer resource dropdown */
         .resource-selection {
+            position: relative;
             text-align: center;
             margin: 15px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .resource-selection select {
             width: 100%;
-            padding: 10px;
+            padding: 12px;
             border: 2px solid var(--secondary-light);
-            border-radius: 8px;
+            border-radius: 12px;
             font-family: 'Comic Neue', cursive;
             font-size: 0.95rem;
             background-color: var(--light);
             color: var(--dark);
+            cursor: pointer;
+            appearance: none; /* Remove default arrow */
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23546079' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 40px;
+            transition: all 0.3s ease;
+        }
+
+        .resource-selection select:focus {
+            outline: none;
+            border-color: var(--secondary);
+            box-shadow: 0 0 0 3px var(--secondary-light);
+        }
+
+        .resource-selection select:hover {
+            border-color: var(--secondary);
+        }
+
+        /* Style for the options */
+        .resource-selection select option {
+            padding: 8px;
+        }
+
+        .resource-selection select optgroup {
+            margin-top: 8px;
+            font-family: 'Architects Daughter', cursive;
+            color: var(--primary-dark);
+        }
+
+        /* Refresh button */
+        .refresh-btn {
+            background-color: var(--secondary-light);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: var(--dark);
+        }
+
+        .refresh-btn:hover {
+            background-color: var(--secondary);
+            color: white;
+            transform: rotate(30deg);
+        }
+
+        .refresh-btn svg {
+            width: 18px;
+            height: 18px;
         }
 
         .timer-records {
@@ -1736,14 +1796,18 @@
                 <div class="resource-selection">
                     <select id="timer-resource">
                         <option value="">-- Select a resource to track --</option>
-                        <!-- We'll populate this with JS instead of using load_subject_details -->
                     </select>
+                    <button type="button" class="refresh-btn" title="Refresh resources">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+                        </svg>
+                    </button>
                 </div>
                 
                 <div class="timer-controls">
                     <button id="start-timer" class="timer-btn start">Start</button>
                     <button id="pause-timer" class="timer-btn pause" disabled>Pause</button>
-                    <button id="reset-timer" class="timer-btn reset" disabled>Reset</button>
+                    <button id="reset-timer" class="timer-btn reset" disabled>Stop</button>
                 </div>
                 
                 <div class="timer-records">
@@ -1961,464 +2025,228 @@
                                 }
                             }
                         }
-                    });
+                    });});
                 }
             {% endif %}
 
-            // Explicitly define the tab switching function
-            window.switchStatsTab = function(tabName) {
+            // Stats tab switching
+            function switchStatsTab(tabName) {
                 // Remove active class from all tabs and charts
-                document.querySelectorAll('.stats-tab').forEach(t => {
-                    t.classList.remove('active');
-                });
-                document.querySelectorAll('.stats-chart-container').forEach(c => {
-                    c.classList.remove('active');
-                });
-
-                // Add active class to clicked tab and corresponding chart
+                document.querySelectorAll('.stats-tab').forEach(tab => tab.classList.remove('active'));
+                document.querySelectorAll('.stats-chart-container').forEach(chart => chart.classList.remove('active'));
+                
+                // Add active class to selected tab and chart
                 document.querySelector(`.stats-tab[data-tab="${tabName}"]`).classList.add('active');
                 document.getElementById(`${tabName}-chart`).classList.add('active');
-
-                // Re-render the chart to fix any display issues
-                if (tabName === 'daily' && window.dailyChart) {
-                    window.dailyChart.render();
-                } else if (tabName === 'subject' && window.subjectChart) {
-                    window.subjectChart.render();
-                } else if (tabName === 'score' && window.scoreChart) {
-                    window.scoreChart.render();
-                }
             }
 
-            // Function to update stats based on time range
-            window.updateStatsTimeRange = function(daysRange) {
-                // Save the selected range to localStorage for persistence
-                localStorage.setItem('statsTimeRange', daysRange);
-                
-                // Get the currently active tab
-                const activeTab = document.querySelector('.stats-tab.active').dataset.tab;
-                
-                // Update charts based on the selected range
-                if (activeTab === 'daily') {
-                    updateDailyChart(daysRange);
-                } else if (activeTab === 'subject') {
-                    updateSubjectChart(daysRange);
-                }
-            }
-
-            // Function to update the daily progress chart
-            function updateDailyChart(daysRange) {
-                {% if daily_progress and daily_progress|length > 0 %}
-                    if (window.dailyChart) {
-                        // Filter data based on range
-                        let filteredData;
-                        let filteredCounts;
-                        if (daysRange === 'all') {
-                            filteredData = [{% for date, count in daily_progress %}'{{ date }}'{% if not loop.last %}, {% endif %}{% endfor %}];
-                            filteredCounts = [{% for date, count in daily_progress %}{{ count }}{% if not loop.last %}, {% endif %}{% endfor %}];
-                        } else {
-                            // Parse the range as a number
-                            const days = parseInt(daysRange);
-                            // Filter to only include the last N days
-                            const allDates = [{% for date, count in daily_progress %}'{{date }}'{% if not loop.last %}, {% endif %}{% endfor %}];
-                            const allCounts = [{% for date, count in daily_progress %}{{ count }}{% if not loop.last %}, {% endif %}{% endfor %}];
-                            
-                            // Take only the most recent days
-                            const startIndex = Math.max(0, allDates.length - days);
-                            filteredData = allDates.slice(startIndex);
-                            filteredCounts = allCounts.slice(startIndex);
-                        }
-                        
-                        // Update chart data
-                        window.dailyChart.data.labels = filteredData;
-                        window.dailyChart.data.datasets[0].data = filteredCounts;
-                        window.dailyChart.update();
-                    }
-                {% endif %}
-            }
-
-            // Function to update the subject chart
-            function updateSubjectChart(daysRange) {
-                {% if subject_counts and subject_counts.values()|sum > 0 %}
-                    if (window.subjectChart) {
-                        // For simplicity we're not filtering subject data by date here
-                        // In a real implementation, you would fetch filtered data from the server
-                        window.subjectChart.update();
-                    }
-                {% endif %}
-            }
-
-            // Initialize time range from localStorage
-            const savedRange = localStorage.getItem('statsTimeRange') || '7';
-            const rangeSelect = document.getElementById('stats-range');
-            if (rangeSelect) {
-                rangeSelect.value = savedRange;
-                updateStatsTimeRange(savedRange);
-            }
-
-             // Subject management functionality
-            // Function to open the add subject modal
-            window.openAddSubjectModal = function() {
-                document.getElementById('addSubjectModal').style.display = 'block';
-                document.getElementById('subjectNameInput').focus();
-            }
+            // Timer functionality
+            const timerDisplay = document.getElementById('timer-display');
+            const startBtn = document.getElementById('start-timer');
+            const pauseBtn = document.getElementById('pause-timer');
+            const resetBtn = document.getElementById('reset-timer');
+            const timerTypeButtons = document.querySelectorAll('.timer-type-btn');
+            const timerTargetContainer = document.getElementById('timer-target');
+            const timerMinutesInput = document.getElementById('timer-minutes');
+            const timerResourceSelect = document.getElementById('timer-resource');
+            const catEmoji = document.getElementById('cat-emoji');
+            const recentTimesContainer = document.getElementById('recent-times');
+            const bestTimesContainer = document.getElementById('best-times');
             
-            // Function to close the add subject modal
-            window.closeAddSubjectModal = function() {
-                document.getElementById('addSubjectModal').style.display = 'none';
-            }
-            
-            // Function to open the edit subject modal
-            window.openEditSubjectModal = function(subjectName) {
-                document.getElementById('originalSubjectName').value = subjectName;
-                document.getElementById('editSubjectNameInput').value = subjectName;
-                document.getElementById('editSubjectModal').style.display = 'block';
-                document.getElementById('editSubjectNameInput').focus();
-                document.getElementById('editSubjectNameInput').select(); // Select all text for easy editing
-            }
-            
-            // Function to close the edit subject modal
-            window.closeEditSubjectModal = function() {
-                document.getElementById('editSubjectModal').style.display = 'none';
-            }
-            
-            // Handle click outside the modals to close them
-            window.addEventListener('click', function(event) {
-                const addModal = document.getElementById('addSubjectModal');
-                const editModal = document.getElementById('editSubjectModal');
-                
-                if (event.target === addModal) {
-                    closeAddSubjectModal();
-                }
-                
-                if (event.target === editModal) {
-                    closeEditSubjectModal();
-                }
-            });
-            
-            // Handle add subject form submission
-            document.getElementById('addSubjectForm').addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                const subjectName = document.getElementById('subjectNameInput').value.trim();
-                if (!subjectName) return;
-                
-                // Create FormData object
-                const formData = new FormData(this);
-                
-                // Send AJAX request
-                fetch('{{ url_for("add_subject") }}', {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => {
-                    if (response.redirected) {
-                        // If redirected, reload the page to see the new subject
-                        window.location.href = response.url;
-                    } else {
-                        return response.json();
-                    }
-                })
-                .then(data => {
-                    // If we got JSON data back (not redirected)
-                    if (data) {
-                        if (data.success) {
-                            // Add the new subject to the list without page reload
-                            addSubjectToList(data.subject);
-                            closeAddSubjectModal();
-                        } else {
-                            alert(data.message || 'Error adding subject');
-                        }
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                });
-            });
-            
-            // Handle edit subject form submission
-            document.getElementById('editSubjectForm').addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                const originalSubject = document.getElementById('originalSubjectName').value.trim();
-                const newSubject = document.getElementById('editSubjectNameInput').value.trim();
-                
-                if (!newSubject || originalSubject === newSubject) {
-                    closeEditSubjectModal();
-                    return;
-                }
-                
-                // Create FormData object
-                const formData = new FormData(this);
-                
-                // Send AJAX request
-                fetch('{{ url_for("edit_subject_name") }}', {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => {
-                    if (response.redirected) {
-                        // If redirected, reload the page to see changes
-                        window.location.href = response.url;
-                    } else {
-                        return response.json();
-                    }
-                })
-                .then(data => {
-                    // If we got JSON data back (not redirected)
-                    if (data) {
-                        if (data.success) {
-                            // Update the subject in the list without page reload
-                            updateSubjectInList(originalSubject, data.subject);
-                            closeEditSubjectModal();
-                        } else {
-                            alert(data.message || 'Error editing subject');
-                        }
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                });
-            });
-            
-            // Function to add a new subject to the list without page reload
-            function addSubjectToList(subject) {
-                const subjectList = document.querySelector('.subject-list');
-                
-                // Create new subject card
-                const subjectCard = document.createElement('a');
-                subjectCard.href = `/subject/${subject}`;
-                subjectCard.className = 'subject-card';
-                
-                // Random subject icon (simplified for this example)
-                const iconIndex = Math.floor(Math.random() * 4) + 1;
-                let iconSvg = '';
-                
-                if (iconIndex === 1) {
-                    iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#92c1ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-                    </svg>`;
-                } else {
-                    iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#92c1ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                        <polyline points="14 2 14 8 20 8"></polyline>
-                        <line x1="16" y1="13" x2="8" y2="13"></line>
-                        <line x1="16" y1="17" x2="8" y2="17"></line>
-                        <polyline points="10 9 9 9 8 9"></polyline>
-                    </svg>`;
-                }
-                
-                // Create the subject card content
-                subjectCard.innerHTML = `
-                    <div class="subject-icon">
-                        ${iconSvg}
-                    </div>
-                    <div class="subject-info">
-                        <div class="subject-name">${subject}</div>
-                        <div class="subject-tests">Click to view details</div>
-                    </div>
-                    
-                    <!-- Delete Subject Button -->
-                    <form method="POST" action="{{ url_for('delete_subject') }}" style="display:inline;">
-                        <input type="hidden" name="subject_name" value="${subject}">
-                        <button type="submit" class="delete-subject-btn" onclick="event.preventDefault(); event.stopPropagation(); this.closest('form').submit();">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="3 6 5 6 21 6"></polyline>
-                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                            </svg>
-                        </button>
-                    </form>
-                    
-                    <!-- Edit Subject Button -->
-                    <button type="button" class="edit-subject-btn" onclick="event.preventDefault(); event.stopPropagation(); openEditSubjectModal('${subject}');">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 20h9"></path>
-                            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
-                        </svg>
-                    </button>
-                `;
-                
-                // Remove empty state if it exists
-                const emptyState = subjectList.querySelector('.empty-state');
-                if (emptyState) {
-                    emptyState.remove();
-                }
-                
-                // Add the new subject card to the list
-                subjectList.appendChild(subjectCard);
-                
-                // Clear the form
-                document.getElementById('subjectNameInput').value = '';
-            }
-            
-            // Function to update a subject in the list without page reload
-            function updateSubjectInList(originalSubject, newSubject) {
-                // Find the subject card
-                const subjectCards = document.querySelectorAll('.subject-card');
-                let subjectCard = null;
-                
-                for (let card of subjectCards) {
-                    const nameElement = card.querySelector('.subject-name');
-                    if (nameElement && nameElement.textContent === originalSubject) {
-                        subjectCard = card;
-                        break;
-                    }
-                }
-                
-                if (subjectCard) {
-                    // Update the subject name
-                    const nameElement = subjectCard.querySelector('.subject-name');
-                    if (nameElement) {
-                        nameElement.textContent = newSubject;
-                    }
-                    
-                    // Update the href
-                    subjectCard.href = `/subject/${newSubject}`;
-                    
-                    // Update the delete form
-                    const deleteForm = subjectCard.querySelector('form');
-                    if (deleteForm) {
-                        const input = deleteForm.querySelector('input[name="subject_name"]');
-                        if (input) {
-                            input.value = newSubject;
-                        }
-                    }
-                    
-                    // Update the edit button
-                    const editButton = subjectCard.querySelector('.edit-subject-btn');
-                    if (editButton) {
-                        editButton.onclick = function(event) {
-                            event.preventDefault();
-                            event.stopPropagation();
-                            openEditSubjectModal(newSubject);
-                        };
-                    }
-                } else {
-                    // If we couldn't find the card, reload the page
-                    window.location.reload();
-                }
-            }
-
-            // Toggle todo completion
-            window.toggleTodo = function(taskId) {
-                fetch(`/toggle-todo/${taskId}`, {
-                    method: 'POST'
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        const todoItem = document.querySelector(`.todo-item[data-id="${taskId}"]`);
-                        const todoCheckbox = todoItem.querySelector('.todo-checkbox');
-                        const todoText = todoItem.querySelector('.todo-text');
-
-                        if (data.completed) {
-                            todoCheckbox.classList.add('checked');
-                            todoText.classList.add('completed');
-                        } else {
-                            todoCheckbox.classList.remove('checked');
-                            todoText.classList.remove('completed');
-                        }
-                    } else {
-                        alert(data.message);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error toggling todo:', error);
-                });
-            };
-
-            // Fetch resource data from the server
-            function fetchResourceData() {
-                // Make a fetch request to get resources
-                fetch('/get-resources')
-                    .then(response => response.json())
-                    .then(data => {
-                        populateResourceOptions(data);
-                    })
-                    .catch(error => {
-                        console.error('Error fetching resources:', error);
-                        // Use placeholder resources if fetch fails
-                        populatePlaceholderResources();
-                    });
-            }
-
-            // Populate resource dropdown with placeholder data
-            function populatePlaceholderResources() {
-                const resourceSelect = document.getElementById('timer-resource');
-                
-                // Add example resources for each subject
-                {% if subjects %}
-                    {% for subject in subjects %}
-                        const option{{ loop.index }} = document.createElement('option');
-                        option{{ loop.index }}.value = '{{ subject }}|example-test|example-topic|example-resource';
-                        option{{ loop.index }}.textContent = '{{ subject }} - Example Test - Example Topic - Example Resource';
-                        resourceSelect.appendChild(option{{ loop.index }});
-                    {% endfor %}
-                {% endif %}
-            }
-
-            // Populate resource dropdown with real data
-            function populateResourceOptions(data) {
-                const resourceSelect = document.getElementById('timer-resource');
-                
-                // Clear existing options except the first one
-                while (resourceSelect.options.length > 1) {
-                    resourceSelect.remove(1);
-                }
-                
-                // Add real resources if available
-                if (data && data.resources) {
-                    data.resources.forEach(resource => {
-                        const option = document.createElement('option');
-                        option.value = `${resource.subject}|${resource.testId}|${resource.topicId}|${resource.id}`;
-                        option.textContent = `${resource.subject} - ${resource.testName} - ${resource.topicName} - ${resource.name}`;
-                        resourceSelect.appendChild(option);
-                    });
-                } else {
-                    // Use placeholder resources if no data
-                    populatePlaceholderResources();
-                }
-            }
-
-            // Call fetchResourceData when page loads
-            // fetchResourceData();
-            // For now, just use placeholder resources
-            populatePlaceholderResources();
-
-            // Study Timer Functionality
-            // Variables to track timer state
+            // Timer state
+            let timerMode = 'stopwatch'; // 'stopwatch' or 'timer'
+            let timerRunning = false;
             let timerInterval = null;
             let startTime = 0;
             let elapsedTime = 0;
-            let timerRunning = false;
-            let timerType = 'stopwatch'; // or 'timer'
-            let endTime = 0;
-
-            // DOM elements
-            const timerDisplay = document.getElementById('timer-display');
-            const startButton = document.getElementById('start-timer');
-            const pauseButton = document.getElementById('pause-timer');
-            const resetButton = document.getElementById('reset-timer');
-            const timerResource = document.getElementById('timer-resource');
-            const timerMinutes = document.getElementById('timer-minutes');
-            const timerTargetContainer = document.getElementById('timer-target');
-            const catEmoji = document.getElementById('cat-emoji');
-            const timerTypeBtns = document.querySelectorAll('.timer-type-btn');
-            const recordTabs = document.querySelectorAll('.timer-records-tab');
-            const recordContents = document.querySelectorAll('.timer-records-content');
-
-            // Cat emojis for different timer states
-            const catStates = {
-                idle: '😺',
-                studying: '📚😸',
-                paused: '😼',
-                completed: '🎉😻',
-                almostDone: '⏰😿'
+            let timerEndTime = 0;
+            let studyRecords = JSON.parse(localStorage.getItem('studyRecords')) || [];
+            
+            // Cat emojis for different states
+            const catEmojis = {
+                idle: ['😺', '😸', '😽'],
+                studying: ['🧐', '📚', '✏️', '🤓'],
+                completed: ['🎉', '🥳', '😻', '🏆']
             };
+            
+            // Populate the resource dropdown
+          
+            function populateResourceDropdown() {
+                const select = document.getElementById('timer-resource');
+                
+                // Clear existing options except the default one
+                while (select.options.length > 1) {
+                    select.remove(1);
+                }
+                
+                // Add loading option
+                const loadingOption = document.createElement('option');
+                loadingOption.text = 'Loading resources...';
+                loadingOption.disabled = true;
+                select.add(loadingOption);
+                
+                // Fetch resources from server
+                fetch('/get-resources')
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`API returned status code ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        // Remove loading option
+                        select.remove(loadingOption);
+                        
+                        if (!data.success) {
+                            const errorOption = document.createElement('option');
+                            errorOption.text = 'Error loading resources';
+                            errorOption.disabled = true;
+                            select.add(errorOption);
+                            console.error('API error:', data.error);
+                            return;
+                        }
+                        
+                        const subjects = data.subjects;
+                        if (!subjects || subjects.length === 0) {
+                            const noResourcesOption = document.createElement('option');
+                            noResourcesOption.text = 'No incomplete resources found';
+                            noResourcesOption.disabled = true;
+                            select.add(noResourcesOption);
+                            return;
+                        }
+                        
+                        // Add each resource in the requested format
+                        let totalResources = 0;
+                        
+                        subjects.forEach(subject => {
+                            subject.tests.forEach(test => {
+                                test.topics.forEach(topic => {
+                                    topic.resources.forEach(resource => {
+                                        // Create option for each resource
+                                        const option = document.createElement('option');
+                                        
+                                        // Store all relevant data
+                                        const resourceData = {
+                                            subject_name: subject.name,
+                                            test_id: test.id,
+                                            test_name: test.name,
+                                            topic_id: topic.id,
+                                            topic_name: topic.name,
+                                            resource_id: resource.id,
+                                            resource_name: resource.name,
+                                            completed: resource.completed,
+                                            count: resource.count
+                                        };
+                                        
+                                        option.value = JSON.stringify(resourceData);
+                                        // Format: {resource}-{topic}-{subject}
+                                        option.text = `${resource.name}-${topic.name}-${subject.name}`;
+                                        
+                                        select.add(option);
+                                        totalResources++;
+                                    });
+                                });
+                            });
+                        });
+                        
+                        if (totalResources === 0) {
+                            const noResourcesOption = document.createElement('option');
+                            noResourcesOption.text = 'No incomplete resources found';
+                            noResourcesOption.disabled = true;
+                            select.add(noResourcesOption);
+                        }
+                        
+                        console.log(`Loaded ${totalResources} incomplete resources`);
+                    })
+                    .catch(error => {
+                        // Remove loading option
+                        select.remove(loadingOption);
+                        
+                        // Add error option
+                        const errorOption = document.createElement('option');
+                        errorOption.text = 'Error loading resources';
+                        errorOption.disabled = true;
+                        select.add(errorOption);
+                        
+                        console.error('Error fetching resources:', error);
+                    });
+            }
 
+            // Call this function when the page loads
+            populateResourceDropdown();
+            
+            // Initialize timer records display
+            function updateTimerRecords() {
+                // Sort records by date (newest first)
+                const sortedRecords = [...studyRecords].sort((a, b) => b.timestamp - a.timestamp);
+                
+                // Recent times - show last 5
+                recentTimesContainer.innerHTML = '';
+                const recentRecords = sortedRecords.slice(0, 5);
+                
+                if (recentRecords.length > 0) {
+                    recentRecords.forEach(record => {
+                        const recordItem = document.createElement('div');
+                        recordItem.className = 'timer-record-item';
+                        
+                        const recordInfo = document.createElement('div');
+                        recordInfo.textContent = record.resourceName || 'Unnamed resource';
+                        
+                        const recordTime = document.createElement('div');
+                        recordTime.textContent = formatTime(record.duration);
+                        
+                        recordItem.appendChild(recordInfo);
+                        recordItem.appendChild(recordTime);
+                        recentTimesContainer.appendChild(recordItem);
+                    });
+                } else {
+                    const emptyState = document.createElement('div');
+                    emptyState.className = 'empty-state';
+                    emptyState.innerHTML = '<p>No recent times recorded yet. Start the timer to track your study time!</p>';
+                    recentTimesContainer.appendChild(emptyState);
+                }
+                
+                // Best times - group by resource and show best time
+                bestTimesContainer.innerHTML = '';
+                const bestRecordsByResource = {};
+                
+                studyRecords.forEach(record => {
+                    const key = record.resourceId || record.resourceName || 'unknown';
+                    if (!bestRecordsByResource[key] || record.duration > bestRecordsByResource[key].duration) {
+                        bestRecordsByResource[key] = record;
+                    }
+                });
+                
+                const bestRecords = Object.values(bestRecordsByResource);
+                if (bestRecords.length > 0) {
+                    // Sort by duration (longest first)
+                    bestRecords.sort((a, b) => b.duration - a.duration);
+                    
+                    bestRecords.forEach(record => {
+                        const recordItem = document.createElement('div');
+                        recordItem.className = 'timer-record-item';
+                        
+                        const recordInfo = document.createElement('div');
+                        recordInfo.textContent = record.resourceName || 'Unnamed resource';
+                        
+                        const recordTime = document.createElement('div');
+                        recordTime.textContent = formatTime(record.duration);
+                        
+                        recordItem.appendChild(recordInfo);
+                        recordItem.appendChild(recordTime);
+                        bestTimesContainer.appendChild(recordItem);
+                    });
+                } else {
+                    const emptyState = document.createElement('div');
+                    emptyState.className = 'empty-state';
+                    emptyState.innerHTML = '<p>No best times recorded yet. Start the timer to track your study time!</p>';
+                    bestTimesContainer.appendChild(emptyState);
+                }
+            }
+            
             // Format time as HH:MM:SS
-            function formatTime(timeInMilliseconds) {
-                const totalSeconds = Math.floor(timeInMilliseconds / 1000);
+            function formatTime(milliseconds) {
+                const totalSeconds = Math.floor(milliseconds / 1000);
                 const hours = Math.floor(totalSeconds / 3600);
                 const minutes = Math.floor((totalSeconds % 3600) / 60);
                 const seconds = totalSeconds % 60;
@@ -2429,347 +2257,383 @@
                     seconds.toString().padStart(2, '0')
                 ].join(':');
             }
-
-            // Update timer display
-            function updateTimerDisplay() {
-                if (timerType === 'stopwatch') {
+            
+            // Set random cat emoji
+            function setRandomCatEmoji(state) {
+                const emojis = catEmojis[state];
+                const randomIndex = Math.floor(Math.random() * emojis.length);
+                catEmoji.textContent = emojis[randomIndex];
+            }
+            
+            // Update the timer display
+            function updateTimer() {
+                if (timerMode === 'stopwatch') {
+                    // Stopwatch - count up from 0
                     const currentTime = Date.now();
-                    elapsedTime = currentTime - startTime;
-                    timerDisplay.textContent = formatTime(elapsedTime);
-                    
-                    // Update cat emoji based on study time
-                    if (elapsedTime > 15 * 60 * 1000) { // After 15 minutes
-                        catEmoji.textContent = catStates.studying;
-                    }
+                    const time = currentTime - startTime + elapsedTime;
+                    timerDisplay.textContent = formatTime(time);
                 } else {
-                    // Timer mode (countdown)
-                    const remainingTime = Math.max(0, endTime - Date.now());
-                    timerDisplay.textContent = formatTime(remainingTime);
+                    // Timer - count down from set time
+                    const currentTime = Date.now();
+                    const timeLeft = Math.max(0, timerEndTime - currentTime);
+                    timerDisplay.textContent = formatTime(timeLeft);
                     
-                    // Update cat emoji based on remaining time
-                    if (remainingTime <= 0) {
-                        catEmoji.textContent = catStates.completed;
+                    // Check if timer reached 0
+                    if (timeLeft === 0) {
                         clearInterval(timerInterval);
                         timerRunning = false;
-                        startButton.disabled = false;
-                        pauseButton.disabled = true;
-                        // Notify the user
-                        if (Notification.permission === 'granted') {
+                        startBtn.disabled = false;
+                        pauseBtn.disabled = true;
+                        
+                        // Record the completed timer session
+                        recordStudySession();
+                        
+                        // Show completion emoji
+                        setRandomCatEmoji('completed');
+                        
+                        // Play sound if available
+                        try {
+                            const audio = new Audio('/static/sounds/timer-complete.mp3');
+                            audio.play();
+                        } catch (error) {
+                            console.log('Sound not available');
+                        }
+                        
+                        // Show notification if supported
+                        if ('Notification' in window && Notification.permission === 'granted') {
                             new Notification('Study Time Complete!', {
-                                body: 'Great job! Your study session is complete.',
-                                icon: '/static/images/cat_icon.png'
+                                body: 'Your study timer has finished. Take a break!',
+                                icon: '/static/images/cat-icon.png'
                             });
                         }
-                        // Play a sound if available
-                        const audio = new Audio('/static/sounds/complete.mp3');
-                        audio.play().catch(e => console.log('Audio play failed:', e));
-                        
-                        // Save the timer record
-                        const targetMinutes = parseInt(timerMinutes.value) || 25;
-                        saveTimerRecord(targetMinutes * 60 * 1000, true);
-                    } else if (remainingTime < 60 * 1000) { // Less than 1 minute left
-                        catEmoji.textContent = catStates.almostDone;
                     }
                 }
             }
-
-            // Start timer
-            startButton.addEventListener('click', function() {
-                if (timerRunning) return;
+            
+            // Record study session in local storage
+            // Record study session in local storage and to the server
+            function recordStudySession() {
+                const resourceOption = timerResourceSelect.options[timerResourceSelect.selectedIndex];
+                let resourceInfo = {};
                 
-                if (timerType === 'stopwatch') {
-                    startTime = Date.now() - elapsedTime;
-                } else {
-                    // Get minutes from input
-                    const targetMinutes = parseInt(timerMinutes.value) || 25;
-                    endTime = Date.now() + (targetMinutes * 60 * 1000);
-                }
-                
-                timerInterval = setInterval(updateTimerDisplay, 1000);
-                timerRunning = true;
-                startButton.disabled = true;
-                pauseButton.disabled = false;
-                resetButton.disabled = false;
-                
-                // Update cat emoji
-                catEmoji.textContent = catStates.studying;
-            });
-
-            // Pause timer
-            pauseButton.addEventListener('click', function() {
-                if (!timerRunning) return;
-                
-                clearInterval(timerInterval);
-                timerRunning = false;
-                startButton.disabled = false;
-                pauseButton.disabled = true;
-                
-                // Update cat emoji
-                catEmoji.textContent = catStates.paused;
-            });
-
-            // Reset timer
-            resetButton.addEventListener('click', function() {
-                clearInterval(timerInterval);
-                
-                // Save current time before resetting if not already paused
-                if (timerRunning) {
-                    if (timerType === 'stopwatch') {
-                        saveTimerRecord(elapsedTime);
-                    }
-                }
-                
-                elapsedTime = 0;
-                timerRunning = false;
-                startButton.disabled = false;
-                pauseButton.disabled = true;
-                resetButton.disabled = true;
-                
-                if (timerType === 'stopwatch') {
-                    timerDisplay.textContent = '00:00:00';
-                } else {
-                    const targetMinutes = parseInt(timerMinutes.value) || 25;
-                    timerDisplay.textContent = `${String(targetMinutes).padStart(2, '0')}:00:00`;
-                }
-                
-                // Update cat emoji
-                catEmoji.textContent = catStates.idle;
-            });
-
-            // Toggle timer type
-            timerTypeBtns.forEach(btn => {
-                btn.addEventListener('click', function() {
-                    // Only allow changing when timer is not running
-                    if (timerRunning) {
-                        alert('Please pause the timer before changing the timer type.');
+                if (resourceOption && resourceOption.value && resourceOption.value !== '') {
+                    try {
+                        resourceInfo = JSON.parse(resourceOption.value);
+                    } catch (e) {
+                        console.error('Invalid resource data', e);
                         return;
                     }
-                    
-                    // Remove active class from all buttons
-                    timerTypeBtns.forEach(b => b.classList.remove('active'));
-                    
-                    // Add active class to clicked button
-                    this.classList.add('active');
-                    
-                    // Update timer type
-                    timerType = this.dataset.type;
-                    
-                    // Show/hide timer target input based on type
-                    if (timerType === 'timer') {
-                        timerTargetContainer.classList.add('active');
-                        const targetMinutes = parseInt(timerMinutes.value) || 25;
-                        timerDisplay.textContent = `${String(targetMinutes).padStart(2, '0')}:00:00`;
-                    } else {
-                        timerTargetContainer.classList.remove('active');
-                        timerDisplay.textContent = '00:00:00';
-                    }
-                    
-                    // Reset timer
-                    clearInterval(timerInterval);
-                    elapsedTime = 0;
-                    timerRunning = false;
-                    startButton.disabled = false;
-                    pauseButton.disabled = true;
-                    resetButton.disabled = true;
-                    
-                    // Update cat emoji
-                    catEmoji.textContent = catStates.idle;
-                });
-            });
-
-            // Function to save timer record
-            function saveTimerRecord(duration, isCompleted = false) {
-                // Only save if a resource is selected
-                if (!timerResource.value) return;
+                } else {
+                    // No resource selected, just record locally
+                    console.log("No resource selected, recording time locally only");
+                    recordLocalSession();
+                    return;
+                }
                 
-                // Parse the resource value: subject|test|topic|resourceId
-                const [subject, testId, topicId, resourceId] = timerResource.value.split('|');
+                // For timer, use the target duration; for stopwatch, use elapsed time
+                let duration;
+                if (timerMode === 'timer') {
+                    // Use target duration in milliseconds
+                    duration = parseInt(timerMinutesInput.value, 10) * 60 * 1000;
+                } else {
+                    // Use actual elapsed time
+                    duration = Date.now() - startTime + elapsedTime;
+                }
                 
-                // Get the resource name from the select option
-                const resourceName = timerResource.options[timerResource.selectedIndex].text;
-                
-                // Create a record
+                // Create record for local storage
                 const record = {
-                    id: Date.now().toString(),
-                    subject: subject,
-                    testId: testId,
-                    topicId: topicId,
-                    resourceId: resourceId,
-                    resourceName: resourceName,
+                    timestamp: Date.now(),
+                    date: new Date().toISOString().split('T')[0],
                     duration: duration,
-                    formattedDuration: formatTime(duration),
-                    timestamp: new Date().toISOString(),
-                    date: new Date().toLocaleDateString(),
-                    isCompleted: isCompleted,
-                    type: timerType
+                    mode: timerMode,
+                    resourceId: resourceInfo.resource_id,
+                    resourceName: resourceOption.textContent,
+                    subjectName: resourceInfo.subject_name,
+                    testName: resourceInfo.test_name,
+                    topicName: resourceInfo.topic_name,
+                    ...resourceInfo
                 };
                 
+                // Add to records
+                studyRecords.push(record);
+                
+                // Limit to last 100 records to save space
+                if (studyRecords.length > 100) {
+                    studyRecords = studyRecords.slice(-100);
+                }
+                
                 // Save to localStorage
-                saveRecordToLocalStorage(record);
+                localStorage.setItem('studyRecords', JSON.stringify(studyRecords));
                 
                 // Update display
-                displayTimerRecords();
+                updateTimerRecords();
                 
-                // TODO: Save to server if needed
-                saveTimerRecordToServer(record);
-            }
-
-            // Function to save record to localStorage
-            function saveRecordToLocalStorage(record) {
-                // Get existing records
-                let timerRecords = JSON.parse(localStorage.getItem('timerRecords')) || [];
-                
-                // Add new record
-                timerRecords.push(record);
-                
-                // Sort by timestamp (newest first)
-                timerRecords.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-                
-                // Keep only the latest 50 records
-                if (timerRecords.length > 50) {
-                    timerRecords = timerRecords.slice(0, 50);
-                }
-                
-                // Save back to localStorage
-                localStorage.setItem('timerRecords', JSON.stringify(timerRecords));
-            }
-
-            // Function to save record to server (placeholder)
-            function saveTimerRecordToServer(record) {
-                // This is a placeholder function
-                // In a real implementation, you would send the record to the server via fetch
-                console.log('Saving timer record to server:', record);
-                
-                /* Example:
-                fetch('/save-timer-record', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(record)
-                })
-                .then(response => response.json())
-                .then(data => {
-                    console.log('Success:', data);
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                });
-                */
-            }
-
-            // Function to display timer records
-            function displayTimerRecords() {
-                // Get records from localStorage
-                const timerRecords = JSON.parse(localStorage.getItem('timerRecords')) || [];
-                
-                // Display recent records
-                const recentTimesContainer = document.getElementById('recent-times');
-                if (timerRecords.length > 0) {
-                    // Clear the container
-                    recentTimesContainer.innerHTML = '';
+                // Log progress to server if resource is selected
+                if (resourceInfo.resource_id) {
+                    // This would be an API call to log progress
+                    console.log('Logging study session for resource:', resourceInfo);
                     
-                    // Add the 5 most recent records
-                    const recentRecords = timerRecords.slice(0, 5);
+                    // Prepare data for the API call
+                    const logData = {
+                        resource_id: resourceInfo.resource_id,
+                        subject_name: resourceInfo.subject_name,
+                        test_id: resourceInfo.test_id,
+                        topic_id: resourceInfo.topic_id,
+                        duration: duration,
+                        date: new Date().toISOString().split('T')[0],
+                        auto_complete: false // Don't automatically mark as complete
+                    };
                     
-                    recentRecords.forEach(record => {
-                        const recordItem = document.createElement('div');
-                        recordItem.className = 'timer-record-item';
-                        
-                        const resourceEl = document.createElement('div');
-                        // Extract just the resource name from the full path
-                        const resourceNameParts = record.resourceName.split(' - ');
-                        const resourceNameOnly = resourceNameParts[resourceNameParts.length - 1];
-                        resourceEl.textContent = resourceNameOnly;
-                        
-                        const timeEl = document.createElement('div');
-                        timeEl.textContent = record.formattedDuration;
-                        
-                        recordItem.appendChild(resourceEl);
-                        recordItem.appendChild(timeEl);
-                        
-                        recentTimesContainer.appendChild(recordItem);
-                    });
-                } else {
-                    recentTimesContainer.innerHTML = `
-                        <div class="empty-state">
-                            <p>No recent times recorded yet. Start the timer to track your study time!</p>
-                        </div>
-                    `;
-                }
-                
-                // Display best records (leaderboard)
-                const bestTimesContainer = document.getElementById('best-times');
-                if (timerRecords.length > 0) {
-                    // Clear the container
-                    bestTimesContainer.innerHTML = '';
-                    
-                    // Create a map to find the best times for each resource
-                    const resourceBestTimes = {};
-                    
-                    timerRecords.forEach(record => {
-                        if (!resourceBestTimes[record.resourceId] || 
-                            resourceBestTimes[record.resourceId].duration < record.duration) {
-                            resourceBestTimes[record.resourceId] = record;
+                    // Send data to server
+                    fetch('/api/log-study-time', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(logData)
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
                         }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.success) {
+                            console.log('Study time logged successfully:', data.message);
+                            // If the server updated progress, we might want to update the UI
+                            if (data.progress !== undefined) {
+                                // You could update a progress indicator if desired
+                            }
+                        } else {
+                            console.error('Error logging study time:', data.error);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error logging study time:', error);
+                        // Still keep the local record even if server logging fails
                     });
-                    
-                    // Convert map to array and sort by duration (longest first)
-                    const bestRecords = Object.values(resourceBestTimes)
-                        .sort((a, b) => b.duration - a.duration)
-                        .slice(0, 5);
-                    
-                    bestRecords.forEach(record => {
-                        const recordItem = document.createElement('div');
-                        recordItem.className = 'timer-record-item';
-                        
-                        const resourceEl = document.createElement('div');
-                        // Extract just the resource name from the full path
-                        const resourceNameParts = record.resourceName.split(' - ');
-                        const resourceNameOnly = resourceNameParts[resourceNameParts.length - 1];
-                        resourceEl.textContent = resourceNameOnly;
-                        
-                        const timeEl = document.createElement('div');
-                        timeEl.textContent = record.formattedDuration;
-                        
-                        recordItem.appendChild(resourceEl);
-                        recordItem.appendChild(timeEl);
-                        
-                        bestTimesContainer.appendChild(recordItem);
-                    });
-                } else {
-                    bestTimesContainer.innerHTML = `
-                        <div class="empty-state">
-                            <p>No best times recorded yet. Start the timer to track your study time!</p>
-                        </div>
-                    `;
                 }
             }
 
-            // Switch between records tabs
-            recordTabs.forEach(tab => {
-                tab.addEventListener('click', function() {
-                    // Remove active class from all tabs and content
-                    recordTabs.forEach(t => t.classList.remove('active'));
-                    recordContents.forEach(c => c.classList.remove('active'));
+            // Function to record a session without a resource
+            function recordLocalSession() {
+                // For timer, use the target duration; for stopwatch, use elapsed time
+                let duration;
+                if (timerMode === 'timer') {
+                    // Use target duration in milliseconds
+                    duration = parseInt(timerMinutesInput.value, 10) * 60 * 1000;
+                } else {
+                    // Use actual elapsed time
+                    duration = Date.now() - startTime + elapsedTime;
+                }
+                
+                // Create record
+                const record = {
+                    timestamp: Date.now(),
+                    date: new Date().toISOString().split('T')[0],
+                    duration: duration,
+                    mode: timerMode,
+                    resourceId: null,
+                    resourceName: "Untitled Study Session",
+                    subjectName: null,
+                    testName: null,
+                    topicName: null
+                };
+                
+                // Add to records
+                studyRecords.push(record);
+                
+                // Limit to last 100 records to save space
+                if (studyRecords.length > 100) {
+                    studyRecords = studyRecords.slice(-100);
+                }
+                
+                // Save to localStorage
+                localStorage.setItem('studyRecords', JSON.stringify(studyRecords));
+                
+                // Update display
+                updateTimerRecords();
+            }
+            
+            // Start timer
+            function startTimer() {
+                if (!timerRunning) {
+                    timerRunning = true;
+                    startTime = Date.now();
                     
-                    // Add active class to clicked tab and corresponding content
-                    const tabName = this.dataset.tab;
-                    this.classList.add('active');
-                    document.getElementById(`${tabName}-times`).classList.add('active');
+                    if (timerMode === 'timer') {
+                        // Convert minutes to milliseconds for end time
+                        const durationMs = parseInt(timerMinutesInput.value, 10) * 60 * 1000;
+                        timerEndTime = startTime + durationMs;
+                    }
+                    
+                    timerInterval = setInterval(updateTimer, 1000);
+                    
+                    // Update UI
+                    startBtn.disabled = true;
+                    pauseBtn.disabled = false;
+                    resetBtn.disabled = false;
+                    setRandomCatEmoji('studying');
+                }
+            }
+            
+            // Pause timer
+            function pauseTimer() {
+                if (timerRunning) {
+                    timerRunning = false;
+                    clearInterval(timerInterval);
+                    
+                    // For stopwatch, calculate elapsed time
+                    if (timerMode === 'stopwatch') {
+                        elapsedTime += Date.now() - startTime;
+                    } else {
+                        // For timer, save remaining time
+                        elapsedTime = timerEndTime - Date.now();
+                    }
+                    
+                    // Update UI
+                    startBtn.disabled = false;
+                    pauseBtn.disabled = true;
+                    setRandomCatEmoji('idle');
+                }
+            }
+            
+            // Reset timer
+            function resetTimer() {
+                if (timerRunning) {
+                    // Record the session before resetting
+                    recordStudySession();
+                }
+                
+                timerRunning = false;
+                clearInterval(timerInterval);
+                elapsedTime = 0;
+                
+                // Reset display
+                timerDisplay.textContent = timerMode === 'timer' ? 
+                    formatTime(parseInt(timerMinutesInput.value, 10) * 60 * 1000) : 
+                    '00:00:00';
+                
+                // Update UI
+                startBtn.disabled = false;
+                pauseBtn.disabled = true;
+                resetBtn.disabled = true;
+                setRandomCatEmoji('idle');
+            }
+            
+            // Switch between timer types
+            function switchTimerType(type) {
+                // Reset timer first
+                resetTimer();
+                
+                // Set the mode
+                timerMode = type;
+                
+                // Update UI for timer mode
+                if (type === 'timer') {
+                    timerTargetContainer.classList.add('active');
+                    // Set initial display to the target time
+                    timerDisplay.textContent = formatTime(parseInt(timerMinutesInput.value, 10) * 60 * 1000);
+                } else {
+                    timerTargetContainer.classList.remove('active');
+                    timerDisplay.textContent = '00:00:00';
+                }
+                
+                // Update active button styles
+                timerTypeButtons.forEach(btn => {
+                    if (btn.dataset.type === type) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                });
+            }
+            
+            // Set up event listeners for timer
+            timerTypeButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    switchTimerType(btn.dataset.type);
                 });
             });
-
-            // Initialize timer display
-            displayTimerRecords();
             
-            // Set up notifications
-            if ('Notification' in window) {
-                if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
-                    Notification.requestPermission();
+            startBtn.addEventListener('click', startTimer);
+            pauseBtn.addEventListener('click', pauseTimer);
+            resetBtn.addEventListener('click', resetTimer);
+            
+            // Update timer display when minutes input changes
+            timerMinutesInput.addEventListener('change', () => {
+                if (timerMode === 'timer' && !timerRunning) {
+                    timerDisplay.textContent = formatTime(parseInt(timerMinutesInput.value, 10) * 60 * 1000);
                 }
-            }
+            });
+            
+            // Setup timer records tabs
+            const timerRecordsTabs = document.querySelectorAll('.timer-records-tab');
+            const timerRecordsContents = document.querySelectorAll('.timer-records-content');
+            
+            timerRecordsTabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const tabType = tab.dataset.tab;
+                    
+                    // Update active tab
+                    timerRecordsTabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    
+                    // Show corresponding content
+                    timerRecordsContents.forEach(content => {
+                        content.classList.remove('active');
+                        if (content.id === `${tabType}-times`) {
+                            content.classList.add('active');
+                        }
+                    });
+                });
+            });
+            
+            // Initialize timer records display
+            updateTimerRecords();
+            
+            // Set initial cat emoji
+            setRandomCatEmoji('idle');
         });
+        
+        // Modal functions
+        function openAddSubjectModal() {
+            document.getElementById('addSubjectModal').style.display = 'block';
+            document.getElementById('subjectNameInput').focus();
+        }
+        
+        function closeAddSubjectModal() {
+            document.getElementById('addSubjectModal').style.display = 'none';
+        }
+        
+        function openEditSubjectModal(subjectName) {
+            document.getElementById('originalSubjectName').value = subjectName;
+            document.getElementById('editSubjectNameInput').value = subjectName;
+            document.getElementById('editSubjectModal').style.display = 'block';
+            document.getElementById('editSubjectNameInput').focus();
+        }
+        
+        function closeEditSubjectModal() {
+            document.getElementById('editSubjectModal').style.display = 'none';
+        }
+        
+        // Close modals when clicking outside
+        window.onclick = function(event) {
+            if (event.target == document.getElementById('addSubjectModal')) {
+                closeAddSubjectModal();
+            }
+            if (event.target == document.getElementById('editSubjectModal')) {
+                closeEditSubjectModal();
+            }
+        }
+        
+        // Function to update stats time range
+        function updateStatsTimeRange(days) {
+            console.log('Updating chart time range to:', days);
+            // This would query the server for updated data and refresh the charts
+            // For now, just log that this would happen
+        }
     </script>
 </body>
-</html> 
+</html>

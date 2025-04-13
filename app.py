@@ -2301,6 +2301,356 @@ def test_details(subject_name, test_id):
     flash('Test not found!', 'error')
     return redirect(url_for('subject_details', subject_name=subject_name))
 
+
+@app.route('/api/get-resources')
+def get_resources_api():
+    """Get all resources for the study timer dropdown"""
+    subjects = load_subjects()
+    result = []
+
+    try:
+        # Process each subject
+        for subject_name in subjects:
+            subject_data = load_subject_details(subject_name)
+            
+            subject_entry = {
+                "name": subject_name,
+                "tests": []
+            }
+            
+            # Process each test in this subject
+            for test in subject_data.get('tests', []):
+                # Skip invalid tests
+                if not isinstance(test, dict) or 'id' not in test or 'name' not in test:
+                    continue
+                    
+                # Check if test is in the past
+                is_past = False
+                if 'date' in test:
+                    try:
+                        test_date = datetime.strptime(test['date'], '%Y-%m-%d').date()
+                        today = date.today()
+                        is_past = test_date < today
+                    except:
+                        pass
+                
+                # Skip past tests
+                if is_past:
+                    continue
+                
+                test_entry = {
+                    "id": test['id'],
+                    "name": test['name'],
+                    "topics": []
+                }
+                
+                # Load progress records for this test
+                progress_records = load_progress_records(subject_name, test['id'])
+                
+                # Process topics
+                for topic in test.get('topics', []):
+                    # Skip invalid topics
+                    if not isinstance(topic, dict) or 'id' not in topic or 'name' not in topic:
+                        continue
+                    
+                    topic_entry = {
+                        "id": topic['id'],
+                        "name": topic['name'],
+                        "resources": []
+                    }
+                    
+                    # Process resources
+                    for resource in topic.get('resources', []):
+                        # Skip invalid resources
+                        if not isinstance(resource, dict) or 'id' not in resource or 'name' not in resource:
+                            continue
+                        
+                        # Count completed instances
+                        completed = 0
+                        for record in progress_records.get('records', []):
+                            if record.get('resource_id') == resource['id']:
+                                completed += 1
+                        
+                        count = resource.get('count', 1)
+                        
+                        # Only add if not fully completed
+                        if completed < count:
+                            resource_entry = {
+                                "id": resource['id'],
+                                "name": resource['name'],
+                                "count": count,
+                                "completed": completed
+                            }
+                            topic_entry["resources"].append(resource_entry)
+                    
+                    # Only add topics with resources
+                    if topic_entry["resources"]:
+                        test_entry["topics"].append(topic_entry)
+                
+                # Only add tests with topics
+                if test_entry["topics"]:
+                    subject_entry["tests"].append(test_entry)
+            
+            # Only add subjects with tests
+            if subject_entry["tests"]:
+                result.append(subject_entry)
+        
+        return jsonify({
+            "success": True,
+            "subjects": result
+        })
+    except Exception as e:
+        print(f"Error in get_resources_api: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+@app.route('/api/log-study-time', methods=['POST'])
+def log_study_time():
+    """Record study time for a resource and optionally mark progress"""
+    try:
+        data = request.get_json()
+        
+        # Extract data from request
+        resource_id = data.get('resource_id')
+        subject_name = data.get('subject_name')
+        test_id = data.get('test_id')
+        topic_id = data.get('topic_id')
+        duration = data.get('duration')  # in milliseconds
+        study_date = data.get('date')
+        auto_complete = data.get('auto_complete', False)  # whether to mark a resource as complete
+        
+        # Validation
+        if not all([resource_id, subject_name, test_id, topic_id, duration, study_date]):
+            return jsonify({
+                "success": False,
+                "error": "Missing required fields"
+            }), 400
+        
+        # Convert duration to minutes for logging
+        duration_minutes = duration / (1000 * 60)  # Convert milliseconds to minutes
+        
+        # Load subject details
+        subject_data = load_subject_details(subject_name)
+        
+        # Find the test and resource to validate
+        test = next((t for t in subject_data.get('tests', []) 
+                    if isinstance(t, dict) and t.get('id') == test_id), None)
+                    
+        if not test:
+            return jsonify({
+                "success": False,
+                "error": f"Test not found for subject {subject_name}"
+            }), 404
+            
+        # Find topic and resource
+        found_resource = None
+        resource_name = None
+        topic_name = None
+        
+        for topic in test.get('topics', []):
+            if topic.get('id') == topic_id:
+                topic_name = topic.get('name')
+                for resource in topic.get('resources', []):
+                    if resource.get('id') == resource_id:
+                        found_resource = resource
+                        resource_name = resource.get('name')
+                        break
+                if found_resource:
+                    break
+                    
+        if not found_resource:
+            return jsonify({
+                "success": False,
+                "error": f"Resource not found in test {test.get('name')}"
+            }), 404
+            
+        # Load progress records
+        progress_data = load_progress_records(subject_name, test_id)
+        
+        # Initialize records list if not exists
+        if 'records' not in progress_data:
+            progress_data['records'] = []
+            
+        # Check if we should auto-complete a resource based on timer
+        if auto_complete:
+            # Count completed instances
+            completed = len([r for r in progress_data.get('records', [])
+                            if r.get('resource_id') == resource_id])
+                            
+            # Check if not already complete
+            total = found_resource.get('count', 1)
+            if completed < total:
+                # Add a progress record
+                now = datetime.now()
+                record = {
+                    'id': str(uuid.uuid4()),
+                    'topic_id': topic_id,
+                    'topic_name': topic_name,
+                    'resource_id': resource_id,
+                    'resource_name': resource_name,
+                    'notes': f"Completed after studying for {duration_minutes:.1f} minutes",
+                    'date': study_date,
+                    'timestamp': now.strftime('%Y-%m-%d %H:%M:%S'),
+                    'study_duration': duration_minutes,
+                    'auto_completed': True
+                }
+                
+                progress_data['records'].append(record)
+                
+                # Save progress records
+                save_progress_records(subject_name, test_id, progress_data)
+                
+                # Calculate new progress
+                new_progress = calculate_progress(test, subject_name)
+                
+                return jsonify({
+                    "success": True,
+                    "message": f"Progress recorded for {resource_name}",
+                    "progress": new_progress,
+                    "completed": completed + 1,
+                    "total": total
+                })
+        
+        # Just log the study time without marking complete
+        # Add a study session record (without incrementing progress)
+        study_record = {
+            'id': str(uuid.uuid4()),
+            'topic_id': topic_id,
+            'topic_name': topic_name,
+            'resource_id': resource_id,
+            'resource_name': resource_name,
+            'notes': f"Studied for {duration_minutes:.1f} minutes",
+            'date': study_date,
+            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'study_duration': duration_minutes,
+            'study_only': True  # Flag to indicate this doesn't count toward completion
+        }
+        
+        # We could store these in a separate collection, but for simplicity
+        # we'll add them to the regular progress records with a flag
+        progress_data['records'].append(study_record)
+        
+        # Save progress records
+        save_progress_records(subject_name, test_id, progress_data)
+        
+        return jsonify({
+            "success": True,
+            "message": f"Study time logged for {resource_name}"
+        })
+        
+    except Exception as e:
+        print(f"Error logging study time: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+        
+@app.route('/get-resources')  # Notice: NO /api prefix
+def get_resources():
+    """Get all resources for the study timer dropdown"""
+    subjects = load_subjects()
+    result = []
+
+    try:
+        # Process each subject
+        for subject_name in subjects:
+            subject_data = load_subject_details(subject_name)
+            
+            subject_entry = {
+                "name": subject_name,
+                "tests": []
+            }
+            
+            # Process each test in this subject
+            for test in subject_data.get('tests', []):
+                # Skip invalid tests
+                if not isinstance(test, dict) or 'id' not in test or 'name' not in test:
+                    continue
+                    
+                # Check if test is in the past
+                is_past = False
+                if 'date' in test:
+                    try:
+                        test_date = datetime.strptime(test['date'], '%Y-%m-%d').date()
+                        today = date.today()
+                        is_past = test_date < today
+                    except:
+                        pass
+                
+                # Skip past tests
+                if is_past:
+                    continue
+                
+                test_entry = {
+                    "id": test['id'],
+                    "name": test['name'],
+                    "topics": []
+                }
+                
+                # Load progress records for this test
+                progress_records = load_progress_records(subject_name, test['id'])
+                
+                # Process topics
+                for topic in test.get('topics', []):
+                    # Skip invalid topics
+                    if not isinstance(topic, dict) or 'id' not in topic or 'name' not in topic:
+                        continue
+                    
+                    topic_entry = {
+                        "id": topic['id'],
+                        "name": topic['name'],
+                        "resources": []
+                    }
+                    
+                    # Process resources
+                    for resource in topic.get('resources', []):
+                        # Skip invalid resources
+                        if not isinstance(resource, dict) or 'id' not in resource or 'name' not in resource:
+                            continue
+                        
+                        # Count completed instances
+                        completed = 0
+                        for record in progress_records.get('records', []):
+                            if record.get('resource_id') == resource['id']:
+                                completed += 1
+                        
+                        count = resource.get('count', 1)
+                        
+                        # Only add if not fully completed
+                        if completed < count:
+                            resource_entry = {
+                                "id": resource['id'],
+                                "name": resource['name'],
+                                "count": count,
+                                "completed": completed
+                            }
+                            topic_entry["resources"].append(resource_entry)
+                    
+                    # Only add topics with resources
+                    if topic_entry["resources"]:
+                        test_entry["topics"].append(topic_entry)
+                
+                # Only add tests with topics
+                if test_entry["topics"]:
+                    subject_entry["tests"].append(test_entry)
+            
+            # Only add subjects with tests
+            if subject_entry["tests"]:
+                result.append(subject_entry)
+        
+        return jsonify({
+            "success": True,
+            "subjects": result
+        })
+    except Exception as e:
+        print(f"Error in get_resources: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
 if __name__ == '__main__':
     try:
         ensure_file_structure()
@@ -2312,7 +2662,10 @@ if __name__ == '__main__':
             print(f"Email configured for: {app.config['MAIL_USERNAME']}")
         
         print("Starting server...")
-        app.run(debug=True)
+        # Run the app on all network interfaces (0.0.0.0) and port 5000
+        app.run(host='0.0.0.0', port=5000, debug=True)
+        print("Server is running! Other devices can access it at:")
+        print("http://<your-computer-ip>:5000")
     except Exception as e:
         print(f"Error starting application: {str(e)}")
 
